@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="C:\Users\lso13\Desktop\Computer_Graphics\assign-3 (1)\bmploader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\lso13\Desktop\Computer_Graphics\assign-3 (1)\main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\lso13\Desktop\Computer_Graphics\assign-3 (1)\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{AF85C001-156F-3063-94BF-A4184036771F}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
