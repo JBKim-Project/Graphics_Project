@@ -38,7 +38,7 @@
 				{
 					"directoryIndex" : 0,
 					"id" : "assign_1::@6890427a1f51a3e7e1df",
-					"jsonFile" : "target-assign_1-Debug-237116379ccf0e424909.json",
+					"jsonFile" : "target-assign_1-Debug-1177e9e2e8dece630188.json",
 					"name" : "assign_1",
 					"projectIndex" : 0
 				}
@@ -48,8 +48,8 @@
 	"kind" : "codemodel",
 	"paths" : 
 	{
-		"build" : "C:/Users/JungBin/source/repos/Graphics_Project/out/build/x64-Debug",
-		"source" : "C:/Users/JungBin/source/repos/Graphics_Project"
+		"build" : "C:/Users/lso13/source/repos/JBKim-Project/Graphics_Project/out/build/x64-Debug",
+		"source" : "C:/Users/lso13/source/repos/JBKim-Project/Graphics_Project"
 	},
 	"version" : 
 	{
