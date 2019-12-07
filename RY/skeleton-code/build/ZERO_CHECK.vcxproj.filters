@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\rang\Desktop\4-2\Project\Assign-1-v1.1(1)\skeleton-code\build\CMakeFiles\623d2cb174c1cec963b0ecee05d98826\generate.stamp.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{A27F66FB-0419-35CE-AE6A-CB0D3C278848}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
