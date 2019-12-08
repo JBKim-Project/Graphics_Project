@@ -4,7 +4,6 @@
  * Won-Ki Jeong, wkjeong@unist.ac.kr
  */
 
-
 #include <stdio.h>
 #include <GL/glew.h>
 
@@ -49,6 +48,12 @@ float positionx = 0, positiony = 0, positionz = 5;
 
 GLfloat width, height;
 
+float* vertex = NULL;
+int* face = NULL;
+float* normal = NULL;
+float* vertexnormal = NULL;
+int num_vertex, num_face, zero;
+
 typedef struct {
 	unsigned char x, y, z, w;
 } uchar4;
@@ -79,6 +84,106 @@ GLuint fb, depth_rb;
 //
 // Functions
 //
+void get_vertex_face(void)
+{
+	FILE* MeshFile = NULL;
+	MeshFile = fopen("../bunny.off", "r");
+
+	if (MeshFile == NULL) {
+		printf("File Open Error\n");
+		return;
+	}
+	char off[4];
+
+
+
+	fscanf(MeshFile, "%s\n", off);
+	if (strcmp(off, "OFF") != 0) {
+		printf("The first line of this file is not string OFF");
+		return;
+	}
+	fscanf(MeshFile, "%d %d %d", &num_vertex, &num_face, &zero);
+	printf("%d, %d\n", num_vertex, num_face);
+
+	vertex = new float[num_vertex * 3];
+	face = new int[num_face * 3];
+	normal = new float[num_face * 3];
+	vertexnormal = new float[num_vertex * 3];
+
+	for (int i = 0; i < num_vertex * 3; i++)
+	{
+		fscanf(MeshFile, "%f", &vertex[i]);
+
+	}
+
+	int three = 0;
+	for (int i = 0; i < num_face * 3; i++)
+	{
+		if (i % 3 == 0)
+			fscanf(MeshFile, "%d", &three);
+		fscanf(MeshFile, "%d", &face[i]);
+	}
+
+	fclose(MeshFile);
+}
+
+void calculate_normal_vertex(void)
+{
+
+	for (int i = 0; i < num_face * 3; i++)
+	{
+		if (i % 3 == 0) {
+
+			float x1, x2, y1, y2, z1, z2, t;
+
+			x1 = vertex[3 * face[i + 1]] - vertex[3 * face[i]];
+			x2 = vertex[3 * face[i + 2]] - vertex[3 * face[i]];
+			y1 = vertex[3 * face[i + 1] + 1] - vertex[3 * face[i] + 1];
+			y2 = vertex[3 * face[i + 2] + 1] - vertex[3 * face[i] + 1];
+			z1 = vertex[3 * face[i + 1] + 2] - vertex[3 * face[i] + 2];
+			z2 = vertex[3 * face[i + 2] + 2] - vertex[3 * face[i] + 2];
+
+			normal[i] = (y1 * z2 - z1 * y2);
+			normal[i + 1] = (x1 * z2 - z1 * x2) * (-1);
+			normal[i + 2] = (x1 * y2 - y1 * x2);
+
+			t = sqrt(normal[i] * normal[i] + normal[i + 1] * normal[i + 1] + normal[i + 2] * normal[i + 2]);
+			normal[i] = normal[i] / t;
+			normal[i + 1] = normal[i + 1] / t;
+			normal[i + 2] = normal[i + 2] / t;
+
+		}
+
+	}
+
+	int k = 0;
+	float sum[3] = { 0,0,0 };
+
+	for (int i = 0; i < num_vertex; i++)
+	{
+		sum[0] = 0;
+		sum[1] = 0;
+		sum[2] = 0;
+		k = 0;
+		for (int j = 0; j < num_face * 3; j++)
+		{
+			if (j % 3 == 0)
+			{
+				if (face[j] == i || face[j + 1] == i || face[j + 2] == i)
+				{
+					sum[0] += normal[j];
+					sum[1] += normal[j + 1];
+					sum[2] += normal[j + 2];
+					k++;
+				}
+			}
+		}
+		vertexnormal[i * 3] = sum[0] / k;
+		vertexnormal[i * 3 + 1] = sum[1] / k;
+		vertexnormal[i * 3 + 2] = sum[2] / k;
+	}
+}
+
 
 void CreateCube(void)
 {
@@ -157,19 +262,10 @@ void makeSyntheticImages(void)
 	}
 }
 
-void text()
-{
-	char text[32];
-	sprintf(text, "hello world!\n");
-	glColor3f(1, 1, 0);
-	glRasterPos3f(0, 0, zoom);
-	for (int i = 0; text[i] != '\0'; i++)
-		glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, text[i]);
-}
-
 void init(void)
 {
 	// You need to ues glew
+
 	glewInit();
 
 	GLfloat diffuse[4] = { 1.0, 1.0, 1.0, 1.0 };
@@ -191,9 +287,6 @@ void init(void)
 	//LoadBMPFile(&dst, &width, &height, "../Yob.jpg"); // this is how to load image
 	LoadBMPFile(&dst, &width, &height, "../brick.bmp"); // this is how to load image
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-
-	//glGenTextures(1, &color_tex);
-	//glBindTexture(GL_TEXTURE_2D, color_tex);
 	glGenTextures(1, &color_tex);
 	glBindTexture(GL_TEXTURE_2D, color_tex);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -201,7 +294,6 @@ void init(void)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, dst);
-
 
 #define STATIC_CUBEMAP
 	//#define DYNAMIC_CUBEMAP //STATIC_CUBEMAP 
@@ -226,7 +318,7 @@ void init(void)
 	glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, 0, GL_RGBA, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, image2);
 	glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Y, 0, GL_RGBA, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, image3);
 	glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, 0, GL_RGBA, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, image4);
-	//glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Z, 0, GL_RGBA, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, image5);
+	glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Z, 0, GL_RGBA, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, image5);
 	glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, 0, GL_RGBA, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, image6);
 
 	glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_REFLECTION_MAP);
@@ -367,7 +459,7 @@ void update_cubemap()
 	// unbind FBO
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
-
+// text added
 void text(double x, double y)
 {
 	char text[32];
@@ -380,7 +472,6 @@ void text(double x, double y)
 	for (int i = 0; text[i] != '\0'; i++)
 		glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, text[i]);
 }
-
 void display(void)
 {
 	// update dynamic cubemap per frame
@@ -408,20 +499,77 @@ void display(void)
 		glEnable(GL_TEXTURE_2D);
 		glPushMatrix();
 		glTranslatef(0, 0, 5);
-		glScalef(zoom, zoom, zoom);
+		//glScalef(zoom, zoom, zoom);
 		//glRotatef(anglex, 1.0f, 0.0f, 0.0f);
 		//glRotatef(angley, 0.0f, 1.0f, 0.0f);
 
 		CreateCube();
 		glPopMatrix();
 
+		//glPushMatrix();
+
+		//glTranslatef(0, time, time + 7);
+		//glutSolidSphere(0.2f, 100, 100);
+		////glTranslatef(positionx, positiony, 7);
+		//glPopMatrix();
+
+
+
+
+		glLoadIdentity();
+		gluLookAt(0, 0.0, 3.0,
+			0.0, 0.0, 0.0,
+			0.0f, 1.0f, 0.0f);
 		glPushMatrix();
-		text();
-		glTranslatef(0, time, time + 7);
-		glutSolidSphere(0.2f, 100, 100);
-		text(-0.8, -0.8);
-		//glTranslatef(positionx, positiony, 7);
+		text(-0.6, -0.6); // text added
+		glTranslatef(0, 0, 1);
+		glScalef(zoom, zoom, zoom); //scale up down 
+
+
+		GLfloat temp_matrix[16];
+		glRotatef(anglex, 1.0f, 0.0f, 0.0f);
+		glRotatef(angley, 0.0f, 1.0f, 0.0f);
+
+
+		glColor3ub(169, 200, 250);
+		GLuint vertexbuffer;
+		glGenBuffers(1, &vertexbuffer);
+		glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
+		glBufferData(GL_ARRAY_BUFFER, num_vertex * 3 * 4 * 2, 0, GL_STATIC_DRAW);
+		glBufferSubData(GL_ARRAY_BUFFER, 0, num_vertex * 3 * 4, vertex);
+		glBufferSubData(GL_ARRAY_BUFFER, num_vertex * 3 * 4, num_vertex * 3 * 4, vertexnormal);
+
+		GLuint indexbuffer;
+		glGenBuffers(1, &indexbuffer);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexbuffer);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, num_face * 3 * 4, face, GL_STATIC_DRAW);
+
+
+		glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexbuffer);
+
+		glEnableClientState(GL_VERTEX_ARRAY);
+		glEnableClientState(GL_NORMAL_ARRAY);
+
+		glVertexPointer(3, GL_FLOAT, 0, (void*)0);
+		glNormalPointer(GL_FLOAT, 0, (void*)(num_vertex * 3 * 4));
+
+		glDrawElements(GL_TRIANGLES, num_face * 3, GL_UNSIGNED_INT, (void*)0);
+
+
+		glDisableClientState(GL_VERTEX_ARRAY);
+		glDisableClientState(GL_NORMAL_ARRAY);
+
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+		glDeleteBuffers(1, &vertexbuffer);
+		glDeleteBuffers(1, &indexbuffer);
+
 		glPopMatrix();
+
+
+
 		glDisable(GL_TEXTURE_2D);
 
 		if (time > 1)
@@ -435,17 +583,7 @@ void display(void)
 			time = time - 0.005;
 
 	}
-	else if (p == 2) // STATIC CUBEMAP
-	{
 
-	}
-	else if (p == 3) // DYNAMIC CUBEMAP
-	{
-
-	}
-	//glutSolidTeapot(1);
-	//glColor3f(1, 0, 0);
-	//glRectf(-0.8, 0.8, 0.8, -0.8);
 
 	glFlush();
 
@@ -578,6 +716,10 @@ int main(int argc, char** argv)
 	glutInitWindowPosition(100, 100);
 	glutCreateWindow(argv[0]);
 	init();
+
+	get_vertex_face();
+	calculate_normal_vertex();
+
 	glutDisplayFunc(display);
 	glutIdleFunc(idle);
 	glutReshapeFunc(reshape);
