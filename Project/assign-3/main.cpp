@@ -26,6 +26,14 @@
  // Definitions
  //
 
+GLfloat Ipos[4] = { 0,0,10,0 };
+GLfloat diffuse[] = { 1,1,1,0 };
+GLfloat specular[] = { 1,1,1,0 };
+GLfloat ambient[] = { 1,1,1,0 };
+
+int time = 0;
+int check = 0;
+
 int p = 1;
 
 int mouse_prev_x = 0, mouse_prev_y = 0;
@@ -110,13 +118,13 @@ void DrawSkyBox(void)
 	// Negative Z 
 	glTexCoord3f(-1.0f, -1.0f, -1.0f);
 	glVertex3f(-fExtent, -fExtent, -fExtent);
-	
+
 	glTexCoord3f(1.0f, -1.0f, -1.0f);
 	glVertex3f(fExtent, -fExtent, -fExtent);
-	
+
 	glTexCoord3f(1.0f, 1.0f, -1.0f);
 	glVertex3f(fExtent, fExtent, -fExtent);
-	
+
 	glTexCoord3f(-1.0f, 1.0f, -1.0f);
 	glVertex3f(-fExtent, fExtent, -fExtent);
 
@@ -177,65 +185,30 @@ void CreateCube(void)
 	//glTexCoord2d(0.66, 0.5); glVertex3d(1.0, 1.0, 1.0);
 	//glTexCoord2d(0.34, 0.5); glVertex3d(-1.0, 1.0, 1.0);
 
-	glTexCoord2d(0.34, 0.01); glVertex3d(-1.0, -1.0, -1.0);
-	glTexCoord2d(0.66, 0.01); glVertex3d(1.0, -1.0, -1.0);
-	glTexCoord2d(0.66, 0.25); glVertex3d(1.0, -1.0, 1.0);
-	glTexCoord2d(0.34, 0.25); glVertex3d(-1.0, -1.0, 1.0);
+	glTexCoord2d(0, 0); glVertex3d(-1.0, -1.0, -1.0);
+	glTexCoord2d(1, 0); glVertex3d(1.0, -1.0, -1.0);
+	glTexCoord2d(1, 1); glVertex3d(1.0, -1.0, 1.0);
+	glTexCoord2d(0, 1); glVertex3d(-1.0, -1.0, 1.0);
 
-	glTexCoord2d(0.34, 0.5); glVertex3d(-1.0, 1.0, 1.0);
-	glTexCoord2d(0.66, 0.5); glVertex3d(1.0, 1.0, 1.0);
-	glTexCoord2d(0.66, 0.75); glVertex3d(1.0, 1.0, -1.0);
-	glTexCoord2d(0.34, 0.75); glVertex3d(-1.0, 1.0, -1.0);
+	glTexCoord2d(0, 0); glVertex3d(-1.0, 1.0, 1.0);
+	glTexCoord2d(1, 0); glVertex3d(1.0, 1.0, 1.0);
+	glTexCoord2d(1, 1); glVertex3d(1.0, 1.0, -1.0);
+	glTexCoord2d(0, 1); glVertex3d(-1.0, 1.0, -1.0);
 
-	glTexCoord2d(0.34, 0.75); glVertex3d(-1.0, 1.0, -1.0);
-	glTexCoord2d(0.66, 0.75); glVertex3d(1.0, 1.0, -1.0);
-	glTexCoord2d(0.66, 0.99); glVertex3d(1.0, -1.0, -1.0);
-	glTexCoord2d(0.34, 0.99); glVertex3d(-1.0, -1.0, -1.0);
+	glTexCoord2d(0, 0); glVertex3d(-1.0, 1.0, -1.0);
+	glTexCoord2d(1, 0); glVertex3d(1.0, 1.0, -1.0);
+	glTexCoord2d(1, 1); glVertex3d(1.0, -1.0, -1.0);
+	glTexCoord2d(0, 1); glVertex3d(-1.0, -1.0, -1.0);
 
-	glTexCoord2d(0.01, 0.51); glVertex3d(-1.0, -1.0, 1.0);
-	glTexCoord2d(0.34, 0.51); glVertex3d(-1.0, 1.0, 1.0);
-	glTexCoord2d(0.34, 0.75); glVertex3d(-1.0, 1.0, -1.0);
-	glTexCoord2d(0.01, 0.75); glVertex3d(-1.0, -1.0, -1.0);
+	glTexCoord2d(0, 0); glVertex3d(-1.0, -1.0, 1.0);
+	glTexCoord2d(1, 0); glVertex3d(-1.0, 1.0, 1.0);
+	glTexCoord2d(1, 1); glVertex3d(-1.0, 1.0, -1.0);
+	glTexCoord2d(0, 1); glVertex3d(-1.0, -1.0, -1.0);
 
-	glTexCoord2d(0.66, 0.51); glVertex3d(1.0, 1.0, 1.0);
-	glTexCoord2d(0.99, 0.51); glVertex3d(1.0, -1.0, 1.0);
-	glTexCoord2d(0.99, 0.75); glVertex3d(1.0, -1.0, -1.0);
-	glTexCoord2d(0.66, 0.75); glVertex3d(1.0, 1.0, -1.0);
-	glEnd();
-}
-
-void CreateCube2(void)
-{
-	glBegin(GL_QUADS);
-	glTexCoord2d(0.26, 0.33); glVertex3d(-1.0, -1.0, 1.0);
-	glTexCoord2d(0.5, 0.33); glVertex3d(1.0, -1.0, 1.0);
-	glTexCoord2d(0.5, 0.66); glVertex3d(1.0, 1.0, 1.0);
-	glTexCoord2d(0.26, 0.66); glVertex3d(-1.0, 1.0, 1.0);
-
-	glTexCoord2d(0.26, 0.01); glVertex3d(-1.0, -1.0, -1.0);
-	glTexCoord2d(0.5, 0.01); glVertex3d(1.0, -1.0, -1.0);
-	glTexCoord2d(0.5, 0.33); glVertex3d(1.0, -1.0, 1.0);
-	glTexCoord2d(0.26, 0.33); glVertex3d(-1.0, -1.0, 1.0);
-
-	glTexCoord2d(0.26, 0.66); glVertex3d(-1.0, 1.0, 1.0);
-	glTexCoord2d(0.5, 0.66); glVertex3d(1.0, 1.0, 1.0);
-	glTexCoord2d(0.6, 0.99); glVertex3d(1.0, 1.0, -1.0);
-	glTexCoord2d(0.26, 0.99); glVertex3d(-1.0, 1.0, -1.0);
-
-	glTexCoord2d(0.01, 0.34); glVertex3d(-1.0, -1.0, -1.0);
-	glTexCoord2d(0.25, 0.34); glVertex3d(-1.0, -1.0, 1.0);
-	glTexCoord2d(0.25, 0.66); glVertex3d(-1.0, 1.0, 1.0);
-	glTexCoord2d(0.01, 0.66); glVertex3d(-1.0, 1.0, -1.0);
-
-	glTexCoord2d(0.51, 0.34); glVertex3d(1.0, -1.0, 1.0);
-	glTexCoord2d(0.75, 0.34); glVertex3d(1.0, -1.0, -1.0);
-	glTexCoord2d(0.75, 0.66); glVertex3d(1.0, 1.0, -1.0);
-	glTexCoord2d(0.51, 0.66); glVertex3d(1.0, 1.0, 1.0);
-
-	glTexCoord2d(0.76, 0.34); glVertex3d(1.0, -1.0, -1.0);
-	glTexCoord2d(0.99, 0.34); glVertex3d(-1.0, -1.0, -1.0);
-	glTexCoord2d(0.99, 0.66); glVertex3d(-1.0, 1.0, -1.0);
-	glTexCoord2d(0.76, 0.66); glVertex3d(1.0, 1.0, -1.0);
+	glTexCoord2d(0, 0); glVertex3d(1.0, 1.0, 1.0);
+	glTexCoord2d(1, 0); glVertex3d(1.0, -1.0, 1.0);
+	glTexCoord2d(1, 1); glVertex3d(1.0, -1.0, -1.0);
+	glTexCoord2d(0, 1); glVertex3d(1.0, 1.0, -1.0);
 	glEnd();
 }
 
@@ -483,9 +456,14 @@ void display(void)
 #ifdef DYNAMIC_CUBEMAP
 	update_cubemap();
 #endif
+	glEnable(GL_LIGHTING);
+	glEnable(GL_LIGHT0);
 
+	glLightfv(GL_LIGHT0, GL_POSITION, Ipos);
+	glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse);
+	glLightfv(GL_LIGHT0, GL_SPECULAR, specular);
+	glLightfv(GL_LIGHT0, GL_AMBIENT, ambient);
 
-	//glTranslatef(0.0, 0.0, -20.0);
 
 	// render something here...
 	if (p == 1) {
@@ -498,14 +476,32 @@ void display(void)
 			0.0f, 1.0f, 0.0f);
 		glEnable(GL_TEXTURE_2D);
 		glPushMatrix();
-		glTranslatef(positionx, positiony, positionz);
+		glTranslatef(0, 0, 5);
 		glScalef(zoom, zoom, zoom);
 		//glRotatef(anglex, 1.0f, 0.0f, 0.0f);
 		//glRotatef(angley, 0.0f, 1.0f, 0.0f);
 
 		CreateCube();
 		glPopMatrix();
+
+		glPushMatrix();
+
+		glTranslatef(0, time, time + 7);
+		glutSolidSphere(0.2f, 100, 100);
+		//glTranslatef(positionx, positiony, 7);
+		glPopMatrix();
 		glDisable(GL_TEXTURE_2D);
+
+		if (time > 1)
+			check = 1;
+		else if (time < -1)
+			check = 0;
+
+		if (check == 0)
+			time = time + 0.005;
+		else
+			time = time - 0.005;
+
 	}
 	else if (p == 2) // STATIC CUBEMAP
 	{
@@ -624,9 +620,10 @@ void keyboard(unsigned char key, int x, int y)
 		//printf("zoom: %f\n", zoom);
 		break;
 	case 27:
-			exit(0);
-			break;
+		exit(0);
+		break;
 	}
+	//glutPostRedisplay();
 }
 
 void mousemotion(int x, int y)
