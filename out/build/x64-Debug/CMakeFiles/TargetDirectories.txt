@@ -1,3 +1,3 @@
-C:/Users/JungBin/source/repos/Graphics_Project/out/build/x64-Debug/CMakeFiles/edit_cache.dir
-C:/Users/JungBin/source/repos/Graphics_Project/out/build/x64-Debug/CMakeFiles/assign_1.dir
-C:/Users/JungBin/source/repos/Graphics_Project/out/build/x64-Debug/CMakeFiles/rebuild_cache.dir
+C:/Users/rang/source/repos/JBKim-Project/Graphics_Project/out/build/x64-Debug/CMakeFiles/edit_cache.dir
+C:/Users/rang/source/repos/JBKim-Project/Graphics_Project/out/build/x64-Debug/CMakeFiles/assign_1.dir
+C:/Users/rang/source/repos/JBKim-Project/Graphics_Project/out/build/x64-Debug/CMakeFiles/rebuild_cache.dir

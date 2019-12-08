@@ -45,18 +45,18 @@
 			"compileCommandFragments" : 
 			[
 				{
-					"fragment" : "/DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1  "
+					"fragment" : "/DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /ZI /Ob0 /Od /RTC1 /JMC  "
 				}
 			],
 			"includes" : 
 			[
 				{
 					"backtrace" : 2,
-					"path" : "C:/Users/JungBin/source/repos/Graphics_Project/freeglut/include"
+					"path" : "C:/Users/rang/source/repos/JBKim-Project/Graphics_Project/freeglut/include"
 				},
 				{
 					"backtrace" : 2,
-					"path" : "C:/Users/JungBin/source/repos/Graphics_Project/glew/inc"
+					"path" : "C:/Users/rang/source/repos/JBKim-Project/Graphics_Project/glew/inc"
 				}
 			],
 			"language" : "CXX",
@@ -72,7 +72,7 @@
 		"commandFragments" : 
 		[
 			{
-				"fragment" : "/DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1",
+				"fragment" : "/DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /ZI /Ob0 /Od /RTC1 /JMC",
 				"role" : "flags"
 			},
 			{
@@ -80,7 +80,7 @@
 				"role" : "flags"
 			},
 			{
-				"fragment" : "-LIBPATH:C:\\Users\\JungBin\\source\\repos\\Graphics_Project\\freeglut\\lib  -LIBPATH:C:\\Users\\JungBin\\source\\repos\\Graphics_Project\\glew\\lib",
+				"fragment" : "-LIBPATH:C:\\Users\\rang\\source\\repos\\JBKim-Project\\Graphics_Project\\freeglut\\lib  -LIBPATH:C:\\Users\\rang\\source\\repos\\JBKim-Project\\Graphics_Project\\glew\\lib",
 				"role" : "libraryPath"
 			},
 			{
