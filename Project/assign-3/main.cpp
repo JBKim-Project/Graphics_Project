@@ -4,6 +4,7 @@
  * Won-Ki Jeong, wkjeong@unist.ac.kr
  */
 
+
 #include <stdio.h>
 #include <GL/glew.h>
 
@@ -78,103 +79,6 @@ GLuint fb, depth_rb;
 //
 // Functions
 //
-
-void DrawSkyBox(void)
-{
-	GLfloat fExtent = 15.0f;
-
-	glBegin(GL_QUADS);
-	//////////////////////////////////////////////
-	// Negative X
-	glTexCoord3f(-1.0f, -1.0f, 1.0f);
-	glVertex3f(-fExtent, -fExtent, fExtent);
-
-	glTexCoord3f(-1.0f, -1.0f, -1.0f);
-	glVertex3f(-fExtent, -fExtent, -fExtent);
-
-	glTexCoord3f(-1.0f, 1.0f, -1.0f);
-	glVertex3f(-fExtent, fExtent, -fExtent);
-
-	glTexCoord3f(-1.0f, 1.0f, 1.0f);
-	glVertex3f(-fExtent, fExtent, fExtent);
-
-
-	///////////////////////////////////////////////
-	//  Postive X
-	glTexCoord3f(1.0f, -1.0f, -1.0f);
-	glVertex3f(fExtent, -fExtent, -fExtent);
-
-	glTexCoord3f(1.0f, -1.0f, 1.0f);
-	glVertex3f(fExtent, -fExtent, fExtent);
-
-	glTexCoord3f(1.0f, 1.0f, 1.0f);
-	glVertex3f(fExtent, fExtent, fExtent);
-
-	glTexCoord3f(1.0f, 1.0f, -1.0f);
-	glVertex3f(fExtent, fExtent, -fExtent);
-
-
-	////////////////////////////////////////////////
-	// Negative Z 
-	glTexCoord3f(-1.0f, -1.0f, -1.0f);
-	glVertex3f(-fExtent, -fExtent, -fExtent);
-
-	glTexCoord3f(1.0f, -1.0f, -1.0f);
-	glVertex3f(fExtent, -fExtent, -fExtent);
-
-	glTexCoord3f(1.0f, 1.0f, -1.0f);
-	glVertex3f(fExtent, fExtent, -fExtent);
-
-	glTexCoord3f(-1.0f, 1.0f, -1.0f);
-	glVertex3f(-fExtent, fExtent, -fExtent);
-
-	////////////////////////////////////////////////
-	// Positive Z 
-	/*
-	glTexCoord3f(1.0f, -1.0f, 1.0f);
-	glVertex3f(fExtent, -fExtent, fExtent);
-
-	glTexCoord3f(-1.0f, -1.0f, 1.0f);
-	glVertex3f(-fExtent, -fExtent, fExtent);
-
-	glTexCoord3f(-1.0f, 1.0f, 1.0f);
-	glVertex3f(-fExtent, fExtent, fExtent);
-
-	glTexCoord3f(1.0f, 1.0f, 1.0f);
-	glVertex3f(fExtent, fExtent, fExtent);
-	*/
-
-	//////////////////////////////////////////////////
-	// Positive Y
-	glTexCoord3f(-1.0f, 1.0f, 1.0f);
-	glVertex3f(-fExtent, fExtent, fExtent);
-
-	glTexCoord3f(-1.0f, 1.0f, -1.0f);
-	glVertex3f(-fExtent, fExtent, -fExtent);
-
-	glTexCoord3f(1.0f, 1.0f, -1.0f);
-	glVertex3f(fExtent, fExtent, -fExtent);
-
-	glTexCoord3f(1.0f, 1.0f, 1.0f);
-	glVertex3f(fExtent, fExtent, fExtent);
-
-
-	///////////////////////////////////////////////////
-	// Negative Y
-	glTexCoord3f(-1.0f, -1.0f, -1.0f);
-	glVertex3f(-fExtent, -fExtent, -fExtent);
-
-	glTexCoord3f(-1.0f, -1.0f, 1.0f);
-	glVertex3f(-fExtent, -fExtent, fExtent);
-
-	glTexCoord3f(1.0f, -1.0f, 1.0f);
-	glVertex3f(fExtent, -fExtent, fExtent);
-
-	glTexCoord3f(1.0f, -1.0f, -1.0f);
-	glVertex3f(fExtent, -fExtent, -fExtent);
-	glEnd();
-
-}
 
 void CreateCube(void)
 {
@@ -253,6 +157,16 @@ void makeSyntheticImages(void)
 	}
 }
 
+void text()
+{
+	char text[32];
+	sprintf(text, "hello world!\n");
+	glColor3f(1, 1, 0);
+	glRasterPos3f(0, 0, zoom);
+	for (int i = 0; text[i] != '\0'; i++)
+		glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, text[i]);
+}
+
 void init(void)
 {
 	// You need to ues glew
@@ -277,6 +191,9 @@ void init(void)
 	//LoadBMPFile(&dst, &width, &height, "../Yob.jpg"); // this is how to load image
 	LoadBMPFile(&dst, &width, &height, "../brick.bmp"); // this is how to load image
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+	//glGenTextures(1, &color_tex);
+	//glBindTexture(GL_TEXTURE_2D, color_tex);
 	glGenTextures(1, &color_tex);
 	glBindTexture(GL_TEXTURE_2D, color_tex);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -284,6 +201,7 @@ void init(void)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, dst);
+
 
 #define STATIC_CUBEMAP
 	//#define DYNAMIC_CUBEMAP //STATIC_CUBEMAP 
@@ -308,7 +226,7 @@ void init(void)
 	glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, 0, GL_RGBA, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, image2);
 	glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Y, 0, GL_RGBA, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, image3);
 	glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, 0, GL_RGBA, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, image4);
-	glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Z, 0, GL_RGBA, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, image5);
+	//glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Z, 0, GL_RGBA, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, image5);
 	glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, 0, GL_RGBA, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, image6);
 
 	glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_REFLECTION_MAP);
@@ -450,6 +368,19 @@ void update_cubemap()
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
+void text(double x, double y)
+{
+	char text[32];
+
+	sprintf(text, "Zoom: %.1f", zoom);
+
+	glColor3f(1.0f, 1.0f, 1.0f);
+
+	glRasterPos2f(x, y);
+	for (int i = 0; text[i] != '\0'; i++)
+		glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, text[i]);
+}
+
 void display(void)
 {
 	// update dynamic cubemap per frame
@@ -485,9 +416,10 @@ void display(void)
 		glPopMatrix();
 
 		glPushMatrix();
-
+		text();
 		glTranslatef(0, time, time + 7);
 		glutSolidSphere(0.2f, 100, 100);
+		text(-0.8, -0.8);
 		//glTranslatef(positionx, positiony, 7);
 		glPopMatrix();
 		glDisable(GL_TEXTURE_2D);
@@ -505,71 +437,10 @@ void display(void)
 	}
 	else if (p == 2) // STATIC CUBEMAP
 	{
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		glMatrixMode(GL_MODELVIEW);
-		glLoadIdentity();
-		gluLookAt(0, 0.0, 50.0,
-			0.0, 0.0, 0.0,
-			0.0f, 1.0f, 0.0f);
-
-		glScalef(zoom, zoom, zoom);
-
-
-
-		glEnable(GL_TEXTURE_CUBE_MAP);
-
-		DrawSkyBox();
-
-		glEnable(GL_TEXTURE_GEN_S);
-		glEnable(GL_TEXTURE_GEN_T);
-		glEnable(GL_TEXTURE_GEN_R);
-
-		glPushMatrix();
-		glTranslatef(positionx, positiony, positionz);
-		glRotatef(anglex, 1.0f, 0.0f, 0.0f);
-		glRotatef(angley, 0.0f, 1.0f, 0.0f);
-		//glutSolidTeapot(3);
-		glutSolidTorus(2, 4, 100, 100);
-		glPopMatrix();
-
-
-		glDisable(GL_TEXTURE_GEN_S);
-		glDisable(GL_TEXTURE_GEN_T);
-		glDisable(GL_TEXTURE_GEN_R);
-		glDisable(GL_TEXTURE_CUBE_MAP);
 	}
 	else if (p == 3) // DYNAMIC CUBEMAP
 	{
-
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		glMatrixMode(GL_MODELVIEW);
-		glLoadIdentity();
-		gluLookAt(0, 0.0, 10.0,
-			0.0, 0.0, 0.0,
-			0.0f, 1.0f, 0.0f);
-		/*
-		glPushMatrix();
-		glTranslatef(3.0, 0.0, 0.0);
-		CreateCube();
-		glPopMatrix();
-		*/
-
-		glEnable(GL_TEXTURE_CUBE_MAP);
-		glEnable(GL_TEXTURE_GEN_S);
-		glEnable(GL_TEXTURE_GEN_T);
-		glEnable(GL_TEXTURE_GEN_R);
-		glTranslatef(positionx, positiony, positionz);
-		glScalef(zoom, zoom, zoom);
-
-		glRotatef(anglex, 1.0f, 0.0f, 0.0f);
-		glRotatef(angley, 0.0f, 1.0f, 0.0f);
-		glutSolidTeapot(1);
-		glDisable(GL_TEXTURE_CUBE_MAP);
-		glDisable(GL_TEXTURE_GEN_S);
-		glDisable(GL_TEXTURE_GEN_T);
-		glDisable(GL_TEXTURE_GEN_R);
 
 	}
 	//glutSolidTeapot(1);
