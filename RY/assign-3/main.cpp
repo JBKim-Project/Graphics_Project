@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <GL/glew.h>
-
+#include <time.h>
 
 
  //
@@ -36,10 +36,9 @@ GLfloat diffuse[] = { 1,1,1,1 };
 GLfloat specular[] = { 1,1,1,0 };
 GLfloat ambient[] = { 1,1,1,1 };
 
-int time = 0;
+int time_ = 0;
 int check = 0;
 
-int p = 1;
 
 int mouse_prev_x = 0, mouse_prev_y = 0;
 int mouse_dx = 0, mouse_dy = 0;
@@ -58,6 +57,8 @@ int* face = NULL;
 float* normal = NULL;
 float* vertexnormal = NULL;
 int num_vertex, num_face, zero;
+
+int score;
 
 struct SphereComponent {
 	float startPositionx = 2;
@@ -364,26 +365,62 @@ void idle()
 	glutPostRedisplay();
 }
 
+char timerBuffer[6 + 1];
+void secToHHMMSS(int secs, char* s, size_t size) {
+	int hour, min, sec;
+
+	sec = secs % 60;
+	min = secs / 60 % 60;
+	//hour = secs / 3600;
+	sprintf_s(s, size, "%02d:%02d", min, sec);
+}
+
+int stopwatch(int onOff) {
+	static int oldTime;
+
+	if (onOff == 1) { // Timer on
+		oldTime = (int)time(NULL);
+		return oldTime;
+	}
+
+	if (onOff == 0) { //Timer off
+		secToHHMMSS(
+			(int)time(NULL) - oldTime,
+			timerBuffer,
+			sizeof(timerBuffer)
+		);
+		return (int)time(NULL) - oldTime;
+
+	}
+
+}
+
 // text added
 void text(double x, double y)
 {
 	char text[32];
-
-	sprintf(text, "Zoom: %.1f", zoom);
-
-	glColor3f(1.0f, 1.0f, 1.0f);
-
+	char text2[32];
+	//sprintf(text, ": %.1f", zoom);
+	int sec = stopwatch(0);
+	score = 100 * sec;
+	sprintf(text, "TIME: %s\n", timerBuffer);
+	sprintf(text2, "Score: %d\n", score);
+	glColor3f(0.0, 0.0, 0.0);
 	glRasterPos2f(x, y);
 	for (int i = 0; text[i] != '\0'; i++)
 		glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, text[i]);
+	glColor3f(0.0, 0.0, 0.0);
+	glRasterPos2f(x, y - 0.05);
+	for (int i = 0; text2[i] != '\0'; i++)
+		glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, text2[i]);
 }
 
 
 void convertDirection(int i)
 {
-	if (SC[i].startPositionx + SC[i].directionx < -1)
+	if (SC[i].startPositionx + SC[i].directionx < -10)
 		SC[i].checkx = 1;
-	else if (SC[i].startPositionx + SC[i].directionx > 1)
+	else if (SC[i].startPositionx + SC[i].directionx > 10)
 		SC[i].checkx = 0;
 
 	if (SC[i].checkx == 1)
@@ -391,9 +428,9 @@ void convertDirection(int i)
 	else if (SC[i].checkx == 0)
 		SC[i].directionx -= SC[i].speedx;
 
-	if (SC[i].startPositiony + SC[i].directiony < -1)
+	if (SC[i].startPositiony + SC[i].directiony < -10)
 		SC[i].checky = 1;
-	else if (SC[i].startPositiony + SC[i].directiony > 1)
+	else if (SC[i].startPositiony + SC[i].directiony > 10)
 		SC[i].checky = 0;
 	\
 		if (SC[i].checky == 1)
@@ -401,9 +438,9 @@ void convertDirection(int i)
 		else if (SC[i].checky == 0)
 			SC[i].directiony -= SC[i].speedy;
 
-	if (SC[i].startPositionz + SC[i].directionz < -1)
+	if (SC[i].startPositionz + SC[i].directionz < -10)
 		SC[i].checkz = 1;
-	else if (SC[i].startPositionz + SC[i].directionz > 1)
+	else if (SC[i].startPositionz + SC[i].directionz > 10)
 		SC[i].checkz = 0;
 
 	if (SC[i].checkz == 1)
@@ -447,9 +484,9 @@ void SettingPositionandDirection(int i)
 		SC[i].checky = 1;
 		SC[i].checkz = 1;
 
-		SC[i].speedx = float((rand() % 10)) / 1000;
-		SC[i].speedy = float((rand() % 10)) / 1000;
-		SC[i].speedz = float((rand() % 10)) / 1000;
+		SC[i].speedx = float((rand() % 10)) / 100;
+		SC[i].speedy = float((rand() % 10)) / 100;
+		SC[i].speedz = float((rand() % 10)) / 100;
 
 	}
 }
@@ -460,7 +497,6 @@ void Make_Sphere(int i)
 	SettingPositionandDirection(i);
 	convertDirection(i);
 	glTranslatef(SC[i].startPositionx + SC[i].directionx, SC[i].startPositiony + SC[i].directiony, SC[i].startPositionz + SC[i].directionz);
-	glTranslatef(0, float(i) / 5, 1);
 	glutSolidSphere(0.15f, 100, 100);
 
 	glPopMatrix();
@@ -470,126 +506,119 @@ void Make_Sphere(int i)
 void display(void)
 {
 	// update dynamic cubemap per frame
-#ifdef DYNAMIC_CUBEMAP
-	update_cubemap();
-#endif
 	glEnable(GL_LIGHTING);
 	glEnable(GL_LIGHT0);
 
 	glLightfv(GL_LIGHT0, GL_POSITION, Ipos);
-	glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse);
+	//glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse);
 	glLightfv(GL_LIGHT0, GL_SPECULAR, specular);
 	glLightfv(GL_LIGHT0, GL_AMBIENT, ambient);
 
 
 	// render something here...
-	if (p == 1) {
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		glMatrixMode(GL_MODELVIEW);
-		glLoadIdentity();
-		gluLookAt(eyePosition[0], eyePosition[1], eyePosition[2],
-			0.0, 0.0, 0.0,
-			0.0f, 1.0f, 0.0f);
-		glEnable(GL_TEXTURE_2D);
-		glPushMatrix();
-		glTranslatef(0, 0, 5);
-		//glScalef(zoom, zoom, zoom);
-		//glRotatef(anglex, 1.0f, 0.0f, 0.0f);
-		//glRotatef(angley, 0.0f, 1.0f, 0.0f);
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+	gluLookAt(eyePosition[0], eyePosition[1], eyePosition[2],
+		0.0, 0.0, 0.0,
+		0.0f, 1.0f, 0.0f);
+	glEnable(GL_TEXTURE_2D);
+	glPushMatrix();
+	glTranslatef(0, 0, 0);
+	glScalef(zoom, zoom, zoom);
+	glRotatef(anglex, 1.0f, 0.0f, 0.0f);
+	glRotatef(angley, 0.0f, 1.0f, 0.0f);
 
-		CreateCube(10.0);
-		glPopMatrix();
+	CreateCube(10.0);
+	glPopMatrix();
 
-		//glPushMatrix();
+	glPushMatrix();
 
-		//glTranslatef(0, time, time + 7);
-		//glutSolidSphere(0.2f, 100, 100);
-		////glTranslatef(positionx, positiony, 7);
-		//glPopMatrix();
+	glLineWidth(4);
 
-		for (int i = 0; i < 20; i++)
-			Make_Sphere(i);
+	glColor3f(1.0f, 0.0f, 0.0f);
+	glBegin(GL_LINE_LOOP);
+	glVertex3f(10.0, 0.0, 0.0);
+	glVertex3f(-10.0, 0.0, 0.0);
+	glEnd();
 
-		
-		glLoadIdentity();
-		gluLookAt(0, 0.0, 3.0,
-			0.0, 0.0, 0.0,
-			0.0f, 1.0f, 0.0f);
-		glPushMatrix();
-		text(-0.6, -0.6); // text added
-		glTranslatef(positionx, positiony, 1);
-		glScalef(zoom, zoom, zoom); //scale up down 
+	glColor3f(0.0f, 1.0f, 0.0f);
+	glBegin(GL_LINE_LOOP);
+	glVertex3f(0.0, 10.0, 0.0);
+	glVertex3f(0.0, -10.0, 0.0);
+	glEnd();
 
+	glColor3f(0.0f, 0.0f, 1.0f);
+	glBegin(GL_LINE_LOOP);
+	glVertex3f(0.0, 0.0, 10.0);
+	glVertex3f(0.0, 0.0, -10.0);
+	glEnd();
 
-		GLfloat temp_matrix[16];
-		glRotatef(anglex, 1.0f, 0.0f, 0.0f);
-		glRotatef(angley, 0.0f, 1.0f, 0.0f);
+	glPopMatrix();
 
+	//glPushMatrix();
 
-		glColor3ub(169, 200, 250);
-		GLuint vertexbuffer;
-		glGenBuffers(1, &vertexbuffer);
-		glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
-		glBufferData(GL_ARRAY_BUFFER, num_vertex * 3 * 4 * 2, 0, GL_STATIC_DRAW);
-		glBufferSubData(GL_ARRAY_BUFFER, 0, num_vertex * 3 * 4, vertex);
-		glBufferSubData(GL_ARRAY_BUFFER, num_vertex * 3 * 4, num_vertex * 3 * 4, vertexnormal);
+	//glTranslatef(0, time, time + 7);
+	//glutSolidSphere(0.2f, 100, 100);
+	//glTranslatef(positionx, positiony, 7);
+	//glPopMatrix();
 
-		GLuint indexbuffer;
-		glGenBuffers(1, &indexbuffer);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexbuffer);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, num_face * 3 * 4, face, GL_STATIC_DRAW);
+	for (int i = 0; i < 20; i++)
+		Make_Sphere(i);
 
 
-		glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexbuffer);
-
-		glEnableClientState(GL_VERTEX_ARRAY);
-		glEnableClientState(GL_NORMAL_ARRAY);
-
-		glVertexPointer(3, GL_FLOAT, 0, (void*)0);
-		glNormalPointer(GL_FLOAT, 0, (void*)(num_vertex * 3 * 4));
-
-		glDrawElements(GL_TRIANGLES, num_face * 3, GL_UNSIGNED_INT, (void*)0);
+	glLoadIdentity();
+	gluLookAt(0, 0.0, 3.0,
+		0.0, 0.0, 0.0,
+		0.0f, 1.0f, 0.0f);
+	glPushMatrix();
+	text(-0.8, -0.8); // text added
+	glTranslatef(positionx, positiony, 1);
+	glScalef(zoom, zoom, zoom); //scale up down 
 
 
-		glDisableClientState(GL_VERTEX_ARRAY);
-		glDisableClientState(GL_NORMAL_ARRAY);
-
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-		glDeleteBuffers(1, &vertexbuffer);
-		glDeleteBuffers(1, &indexbuffer);
-
-		glPopMatrix();
-
-		/*
-		glPushMatrix();
-		glTranslatef(-0.3, time * 0.01, 1 + time);
-		//glColor3f(0, 0, 1);
-		//glTranslatef(positionx, positiony, positionz);
-		glRotatef(anglex, 1.0f, 0.0f, 0.0f);
-		glRotatef(angley, 0.0f, 1.0f, 0.0f);
-		glutSolidSphere(0.05f, 100, 100);
-
-		glPopMatrix();
+	GLfloat temp_matrix[16];
+	glRotatef(anglex, 1.0f, 0.0f, 0.0f);
+	glRotatef(angley, 0.0f, 1.0f, 0.0f);
 
 
-		glDisable(GL_TEXTURE_2D);
+	glColor3ub(169, 200, 250);
+	GLuint vertexbuffer;
+	glGenBuffers(1, &vertexbuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
+	glBufferData(GL_ARRAY_BUFFER, num_vertex * 3 * 4 * 2, 0, GL_STATIC_DRAW);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, num_vertex * 3 * 4, vertex);
+	glBufferSubData(GL_ARRAY_BUFFER, num_vertex * 3 * 4, num_vertex * 3 * 4, vertexnormal);
 
-		if (time > 1)
-			check = 1;
-		else if (time < -1)
-			check = 0;
+	GLuint indexbuffer;
+	glGenBuffers(1, &indexbuffer);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexbuffer);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, num_face * 3 * 4, face, GL_STATIC_DRAW);
 
-		if (check == 0)
-			time = time + 0.005;
-		else
-			time = time - 0.005;
-		*/
-	}
 
+	glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexbuffer);
+
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glEnableClientState(GL_NORMAL_ARRAY);
+
+	glVertexPointer(3, GL_FLOAT, 0, (void*)0);
+	glNormalPointer(GL_FLOAT, 0, (void*)(num_vertex * 3 * 4));
+
+	glDrawElements(GL_TRIANGLES, num_face * 3, GL_UNSIGNED_INT, (void*)0);
+
+
+	glDisableClientState(GL_VERTEX_ARRAY);
+	glDisableClientState(GL_NORMAL_ARRAY);
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+	glDeleteBuffers(1, &vertexbuffer);
+	glDeleteBuffers(1, &indexbuffer);
+
+	glPopMatrix();
 
 	glFlush();
 
@@ -614,13 +643,13 @@ void keyboard(unsigned char key, int x, int y)
 	switch (key)
 	{
 	case '1':
-		p = 1;
+	
 		break;
 	case '2':
-		p = 2;
+	
 		break;
 	case '3':
-		p = 3;
+	
 		break;
 	case 'o':
 		positionz += 1;
@@ -635,85 +664,14 @@ void keyboard(unsigned char key, int x, int y)
 		//printf("zoom: %f\n", zoom);
 		break;
 	case 27:
-		exit(0);
+		char msg[100];
+		wsprintf(msg, TEXT("Your score is %d."), score); //message
+		MessageBox(NULL, msg, TEXT("Game Over"), NULL); //Box name
+		exit(1);
 		break;
 	}
 	//glutPostRedisplay();
 }
-//
-//void mousemotion(int x, int y)
-//{
-//	printf("x: %d\n", x);
-//	printf("y: %d\n", y);
-//
-//	mouse_dx = x - mouse_prev_x;
-//	mouse_dy = y - mouse_prev_y;
-//
-//	mouse_prev_x = x;
-//	mouse_prev_y = y;
-//
-//	if (left_button_pressed == true) {
-//		anglex += (float)mouse_dy;
-//		angley -= (float)mouse_dx;
-//	}
-//	else if (middle_button_pressed == true) {
-//		positionx += mouse_dx * 0.006;
-//		positiony -= mouse_dy * 0.006;
-//	}
-//
-//	glutPostRedisplay();
-//
-//}
-//
-//void mousebutton(int button, int state, int x, int y)
-//{
-//	if (button == GLUT_RIGHT_BUTTON)
-//	{
-//		if (state == GLUT_DOWN)
-//			zoom -= 0.1;
-//
-//	}
-//	else if (button == GLUT_MIDDLE_BUTTON)
-//	{
-//		if (state == GLUT_DOWN)
-//		{
-//			if (middle_button_pressed == false) {
-//				middle_button_pressed = true;
-//				mouse_prev_x = x;
-//				mouse_prev_y = y;
-//			}
-//		}
-//
-//		else if (state == GLUT_UP)
-//		{
-//			middle_button_pressed = false;
-//			mouse_dx = 0;
-//			mouse_dy = 0;
-//		}
-//	}
-//
-//	else if (button == GLUT_LEFT_BUTTON) {
-//
-//		if (state == GLUT_DOWN)
-//		{
-//			if (left_button_pressed == false) {
-//				left_button_pressed = true;
-//				mouse_prev_x = x;
-//				mouse_prev_y = y;
-//			}
-//		}
-//		else if (state == GLUT_UP)
-//		{
-//			left_button_pressed = false;
-//			mouse_dx = 0;
-//			mouse_dy = 0;
-//		}
-//
-//	}
-//
-//	glutPostRedisplay();
-//}
-//
 
 int mouseButton = -1;
 int mousePos[2];
@@ -780,7 +738,8 @@ int main(int argc, char** argv)
 	glutInitWindowPosition(100, 100);
 	glutCreateWindow(argv[0]);
 	init();
-
+	stopwatch(1); // stopwatch ON
+	glutSetCursor(GLUT_CURSOR_NONE);
 	//get_vertex_face();
 	//calculate_normal_vertex();
 

@@ -27,20 +27,18 @@
  //
  // Definitions
  //
-
 float eyePosition[3] = { 0,0,1 };
 float up[3] = { 0,1,0 };
 float scale = 1;
 
-GLfloat Ipos[4] = { 0,0,10,0 };
-GLfloat diffuse[] = { 1,1,1,0 };
+GLfloat Ipos[4] = { 1,1,1,0 };
+GLfloat diffuse[] = { 1,1,1,1 };
 GLfloat specular[] = { 1,1,1,0 };
-GLfloat ambient[] = { 1,1,1,0 };
+GLfloat ambient[] = { 1,1,1,1 };
 
 int time_ = 0;
 int check = 0;
 
-int p = 1;
 
 int mouse_prev_x = 0, mouse_prev_y = 0;
 int mouse_dx = 0, mouse_dy = 0;
@@ -62,6 +60,22 @@ int num_vertex, num_face, zero;
 
 int score;
 
+struct SphereComponent {
+	float startPositionx = 2;
+	float startPositiony = 0;
+	float startPositionz = 0;
+	float directionx = 0;
+	float directiony = 0;
+	float directionz = 0;
+	int checkx = 0;
+	int checky = 0;
+	int checkz = 0;
+	float speedx = 0;
+	float speedy = 0;
+	float speedz = 0;
+};
+
+struct SphereComponent SC[20];
 
 typedef struct {
 	unsigned char x, y, z, w;
@@ -197,11 +211,11 @@ void calculate_normal_vertex(void)
 void CreateCube(float size)
 {
 	glBegin(GL_QUADS);
-
-	glTexCoord2d(0, 0); glVertex3d(-size, -size, size);
-	glTexCoord2d(1, 0); glVertex3d(size, -size, size);
-	glTexCoord2d(1, 1); glVertex3d(size, size, size);
-	glTexCoord2d(0, 1); glVertex3d(-size, size, size);
+	// Remove Front side
+	//glTexCoord2d(0.34, 0.25); glVertex3d(-1.0, -1.0, 1.0);
+	//glTexCoord2d(0.66, 0.25); glVertex3d(1.0, -1.0, 1.0);
+	//glTexCoord2d(0.66, 0.5); glVertex3d(1.0, 1.0, 1.0);
+	//glTexCoord2d(0.34, 0.5); glVertex3d(-1.0, 1.0, 1.0);
 
 	glTexCoord2d(0, 0); glVertex3d(-size, -size, -size);
 	glTexCoord2d(1, 0); glVertex3d(size, -size, -size);
@@ -227,7 +241,6 @@ void CreateCube(float size)
 	glTexCoord2d(1, 0); glVertex3d(size, -size, size);
 	glTexCoord2d(1, 1); glVertex3d(size, -size, -size);
 	glTexCoord2d(0, 1); glVertex3d(size, size, -size);
-
 	glEnd();
 }
 
@@ -287,7 +300,7 @@ void init(void)
 
 	// make synthetic cubemap data
 	makeSyntheticImages();
-
+	
 
 	//
 	// Creating a 2D texture from image
@@ -352,74 +365,7 @@ void idle()
 	glutPostRedisplay();
 }
 
-// dynamically update cubemap
-void update_cubemap()
-{
-	// bind FBO to render to texture
-	glBindFramebuffer(GL_FRAMEBUFFER, fb);
-
-	// render to +x face
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X, cube_tex, 0);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	glLoadIdentity();
-	gluLookAt(0, 0, 0, 1, 0, 0, 0, 1, 0);
-	CreateCube(10.0);
-	// render the entire scene here...
-
-	// render to -x face
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_NEGATIVE_X, cube_tex, 0);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	glLoadIdentity();
-	gluLookAt(0, 0, 0, -1, 0, 0, 0, 1, 0);
-	CreateCube(10.0);
-
-	// render the entire scene here...
-
-	// render to +y face
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_Y, cube_tex, 0);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	glLoadIdentity();
-	gluLookAt(0, 0, 0, 0, 1, 0, 0, 1, 0);
-	CreateCube(10.0);
-	// render the entire scene here...
-
-	// render to -y face
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, cube_tex, 0);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	glLoadIdentity();
-	gluLookAt(0, 0, 0, 0, -1, 0, 0, 1, 0);
-	CreateCube(10.0);
-	// render the entire scene here...
-
-	// render to +z face
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_Z, cube_tex, 0);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	glLoadIdentity();
-	gluLookAt(0, 0, 0, 0, 0, 1, 0, 1, 0);
-	CreateCube(10.0);
-	// render the entire scene here...
-
-	// render to -z face
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, cube_tex, 0);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	glLoadIdentity();
-	gluLookAt(0, 0, 0, 0, 0, -1, 0, 1, 0);
-	CreateCube(10.0);
-	// render the entire scene here...
-
-	// unbind FBO
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-}
-// text added
-// text added
-char timerBuffer[6 + 1]; // for stopwatch
-
+char timerBuffer[6 + 1];
 void secToHHMMSS(int secs, char* s, size_t size) {
 	int hour, min, sec;
 
@@ -449,6 +395,7 @@ int stopwatch(int onOff) {
 
 }
 
+// text added
 void text(double x, double y)
 {
 	char text[32];
@@ -467,125 +414,211 @@ void text(double x, double y)
 	for (int i = 0; text2[i] != '\0'; i++)
 		glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, text2[i]);
 }
+
+
+void convertDirection(int i)
+{
+	if (SC[i].startPositionx + SC[i].directionx < -10)
+		SC[i].checkx = 1;
+	else if (SC[i].startPositionx + SC[i].directionx > 10)
+		SC[i].checkx = 0;
+
+	if (SC[i].checkx == 1)
+		SC[i].directionx += SC[i].speedx;
+	else if (SC[i].checkx == 0)
+		SC[i].directionx -= SC[i].speedx;
+
+	if (SC[i].startPositiony + SC[i].directiony < -10)
+		SC[i].checky = 1;
+	else if (SC[i].startPositiony + SC[i].directiony > 10)
+		SC[i].checky = 0;
+	\
+		if (SC[i].checky == 1)
+			SC[i].directiony += SC[i].speedy;
+		else if (SC[i].checky == 0)
+			SC[i].directiony -= SC[i].speedy;
+
+	if (SC[i].startPositionz + SC[i].directionz < -10)
+		SC[i].checkz = 1;
+	else if (SC[i].startPositionz + SC[i].directionz > 10)
+		SC[i].checkz = 0;
+
+	if (SC[i].checkz == 1)
+		SC[i].directionz += SC[i].speedz;
+	else if (SC[i].checkz == 0)
+		SC[i].directionz -= SC[i].speedz;
+
+}
+
+void SettingPositionandDirection(int i)
+{
+	if (SC[i].startPositionx > 1.5)
+	{
+		if (i % 3 == 0) {
+			//srand(time(NULL));
+			SC[i].startPositionx = 1;
+			SC[i].startPositiony = float((rand() % 100)) / 100;
+			SC[i].startPositionz = float((rand() % 100)) / 100;
+			printf("%f %f %f\n", SC[i].startPositionx, SC[i].startPositiony, SC[i].startPositionz);
+		}
+		else if (i % 3 == 1) {
+			//srand(time(NULL));
+			SC[i].startPositionx = float((rand() % 100)) / 100;
+			SC[i].startPositiony = -1;
+			SC[i].startPositionz = float((rand() % 100)) / 100;
+		}
+		else if (i % 3 == 2) {
+			//srand(time(NULL));
+			SC[i].startPositionx = -1;
+			SC[i].startPositiony = float((rand() % 100)) / 100;
+			SC[i].startPositionz = float((rand() % 100)) / 100;
+		}
+
+		//srand(time(NULL));
+
+		SC[i].directionx = float((rand() % 50)) / 1000;
+		SC[i].directiony = float((rand() % 50)) / 1000;
+		SC[i].directionz = float((rand() % 50)) / 1000;
+
+		SC[i].checkx = 1;
+		SC[i].checky = 1;
+		SC[i].checkz = 1;
+
+		SC[i].speedx = float((rand() % 10)) / 100;
+		SC[i].speedy = float((rand() % 10)) / 100;
+		SC[i].speedz = float((rand() % 10)) / 100;
+
+	}
+}
+
+void Make_Sphere(int i)
+{
+	glPushMatrix();
+	SettingPositionandDirection(i);
+	convertDirection(i);
+	glTranslatef(SC[i].startPositionx + SC[i].directionx, SC[i].startPositiony + SC[i].directiony, SC[i].startPositionz + SC[i].directionz);
+	glutSolidSphere(0.15f, 100, 100);
+
+	glPopMatrix();
+
+}
+
 void display(void)
 {
 	// update dynamic cubemap per frame
-#ifdef DYNAMIC_CUBEMAP
-	update_cubemap();
-#endif
 	glEnable(GL_LIGHTING);
 	glEnable(GL_LIGHT0);
 
 	glLightfv(GL_LIGHT0, GL_POSITION, Ipos);
-	glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse);
+	//glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse);
 	glLightfv(GL_LIGHT0, GL_SPECULAR, specular);
 	glLightfv(GL_LIGHT0, GL_AMBIENT, ambient);
 
 
 	// render something here...
-	if (p == 1) {
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		glMatrixMode(GL_MODELVIEW);
-		glLoadIdentity();
-		gluLookAt(eyePosition[0], eyePosition[1], eyePosition[2],
-			0.0, 0.0, 0.0,
-			0.0f, 1.0f, 0.0f);
-		glEnable(GL_TEXTURE_2D);
-		glPushMatrix();
-		glTranslatef(0, 0, 5);
-		//glScalef(zoom, zoom, zoom);
-		//glRotatef(anglex, 1.0f, 0.0f, 0.0f);
-		//glRotatef(angley, 0.0f, 1.0f, 0.0f);
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+	gluLookAt(eyePosition[0], eyePosition[1], eyePosition[2],
+		0.0, 0.0, 0.0,
+		0.0f, 1.0f, 0.0f);
+	glEnable(GL_TEXTURE_2D);
+	glPushMatrix();
+	glTranslatef(0, 0, 0);
+	glScalef(zoom, zoom, zoom);
+	glRotatef(anglex, 1.0f, 0.0f, 0.0f);
+	glRotatef(angley, 0.0f, 1.0f, 0.0f);
 
-		CreateCube(10.0);
-		glPopMatrix();
+	CreateCube(10.0);
+	glPopMatrix();
 
-		//glPushMatrix();
+	glPushMatrix();
 
-		//glTranslatef(0, time, time + 7);
-		//glutSolidSphere(0.2f, 100, 100);
-		////glTranslatef(positionx, positiony, 7);
-		//glPopMatrix();
+	glLineWidth(4);
 
+	glColor3f(1.0f, 0.0f, 0.0f);
+	glBegin(GL_LINE_LOOP);
+	glVertex3f(10.0, 0.0, 0.0);
+	glVertex3f(-10.0, 0.0, 0.0);
+	glEnd();
 
-		glLoadIdentity();
-		gluLookAt(0, 0.0, 3.0,
-			0.0, 0.0, 0.0,
-			0.0f, 1.0f, 0.0f);
-		glPushMatrix();
-		text(-0.8, -0.8); // text added
-		glTranslatef(positionx, positiony, 1);
-		glScalef(zoom, zoom, zoom); //scale up down 
+	glColor3f(0.0f, 1.0f, 0.0f);
+	glBegin(GL_LINE_LOOP);
+	glVertex3f(0.0, 10.0, 0.0);
+	glVertex3f(0.0, -10.0, 0.0);
+	glEnd();
 
+	glColor3f(0.0f, 0.0f, 1.0f);
+	glBegin(GL_LINE_LOOP);
+	glVertex3f(0.0, 0.0, 10.0);
+	glVertex3f(0.0, 0.0, -10.0);
+	glEnd();
 
-		GLfloat temp_matrix[16];
-		glRotatef(anglex, 1.0f, 0.0f, 0.0f);
-		glRotatef(angley, 0.0f, 1.0f, 0.0f);
+	glPopMatrix();
 
+	//glPushMatrix();
 
-		glColor3ub(169, 200, 250);
-		GLuint vertexbuffer;
-		glGenBuffers(1, &vertexbuffer);
-		glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
-		glBufferData(GL_ARRAY_BUFFER, num_vertex * 3 * 4 * 2, 0, GL_STATIC_DRAW);
-		glBufferSubData(GL_ARRAY_BUFFER, 0, num_vertex * 3 * 4, vertex);
-		glBufferSubData(GL_ARRAY_BUFFER, num_vertex * 3 * 4, num_vertex * 3 * 4, vertexnormal);
+	//glTranslatef(0, time, time + 7);
+	//glutSolidSphere(0.2f, 100, 100);
+	//glTranslatef(positionx, positiony, 7);
+	//glPopMatrix();
 
-		GLuint indexbuffer;
-		glGenBuffers(1, &indexbuffer);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexbuffer);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, num_face * 3 * 4, face, GL_STATIC_DRAW);
+	for (int i = 0; i < 20; i++)
+		Make_Sphere(i);
 
 
-		glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexbuffer);
-
-		glEnableClientState(GL_VERTEX_ARRAY);
-		glEnableClientState(GL_NORMAL_ARRAY);
-
-		glVertexPointer(3, GL_FLOAT, 0, (void*)0);
-		glNormalPointer(GL_FLOAT, 0, (void*)(num_vertex * 3 * 4));
-
-		glDrawElements(GL_TRIANGLES, num_face * 3, GL_UNSIGNED_INT, (void*)0);
+	glLoadIdentity();
+	gluLookAt(0, 0.0, 3.0,
+		0.0, 0.0, 0.0,
+		0.0f, 1.0f, 0.0f);
+	glPushMatrix();
+	text(-0.8, -0.8); // text added
+	glTranslatef(positionx, positiony, 1);
+	glScalef(zoom, zoom, zoom); //scale up down 
 
 
-		glDisableClientState(GL_VERTEX_ARRAY);
-		glDisableClientState(GL_NORMAL_ARRAY);
-
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-		glDeleteBuffers(1, &vertexbuffer);
-		glDeleteBuffers(1, &indexbuffer);
-
-		glPopMatrix();
-
-		glPushMatrix();
-		glTranslatef(-0.3, time_ * 0.01, 1 + time_);
-		//glColor3f(0, 0, 1);
-		//glTranslatef(positionx, positiony, positionz);
-		glRotatef(anglex, 1.0f, 0.0f, 0.0f);
-		glRotatef(angley, 0.0f, 1.0f, 0.0f);
-		glutSolidSphere(0.05f, 100, 100);
-
-		glPopMatrix();
+	GLfloat temp_matrix[16];
+	glRotatef(anglex, 1.0f, 0.0f, 0.0f);
+	glRotatef(angley, 0.0f, 1.0f, 0.0f);
 
 
-		glDisable(GL_TEXTURE_2D);
+	glColor3ub(169, 200, 250);
+	GLuint vertexbuffer;
+	glGenBuffers(1, &vertexbuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
+	glBufferData(GL_ARRAY_BUFFER, num_vertex * 3 * 4 * 2, 0, GL_STATIC_DRAW);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, num_vertex * 3 * 4, vertex);
+	glBufferSubData(GL_ARRAY_BUFFER, num_vertex * 3 * 4, num_vertex * 3 * 4, vertexnormal);
 
-		if (time_ > 1)
-			check = 1;
-		else if (time_ < -1)
-			check = 0;
+	GLuint indexbuffer;
+	glGenBuffers(1, &indexbuffer);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexbuffer);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, num_face * 3 * 4, face, GL_STATIC_DRAW);
 
-		if (check == 0)
-			time_ = time_ + 0.005;
-		else
-			time_ = time_ - 0.005;
 
-	}
+	glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexbuffer);
 
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glEnableClientState(GL_NORMAL_ARRAY);
+
+	glVertexPointer(3, GL_FLOAT, 0, (void*)0);
+	glNormalPointer(GL_FLOAT, 0, (void*)(num_vertex * 3 * 4));
+
+	glDrawElements(GL_TRIANGLES, num_face * 3, GL_UNSIGNED_INT, (void*)0);
+
+
+	glDisableClientState(GL_VERTEX_ARRAY);
+	glDisableClientState(GL_NORMAL_ARRAY);
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+	glDeleteBuffers(1, &vertexbuffer);
+	glDeleteBuffers(1, &indexbuffer);
+
+	glPopMatrix();
 
 	glFlush();
 
@@ -610,13 +643,13 @@ void keyboard(unsigned char key, int x, int y)
 	switch (key)
 	{
 	case '1':
-		p = 1;
+	
 		break;
 	case '2':
-		p = 2;
+	
 		break;
 	case '3':
-		p = 3;
+	
 		break;
 	case 'o':
 		positionz += 1;
@@ -631,7 +664,6 @@ void keyboard(unsigned char key, int x, int y)
 		//printf("zoom: %f\n", zoom);
 		break;
 	case 27:
-
 		char msg[100];
 		wsprintf(msg, TEXT("Your score is %d."), score); //message
 		MessageBox(NULL, msg, TEXT("Game Over"), NULL); //Box name
