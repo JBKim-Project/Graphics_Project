@@ -22,15 +22,15 @@
 #include <stdio.h>
 #include <GL/glew.h>
 #include <time.h>
-
-#define MUSIC_ON
+#include <fstream>
 #ifdef MUSIC_ON
 #include <dshow.h>
 #pragma comment (lib, "strmiids.lib")
 #endif
- //
- // Definitions
- //
+using namespace std;
+//
+// Definitions
+//
 float eyePosition[3] = { 0,0,1 };
 float up[3] = { 0,1,0 };
 float scale = 1;
@@ -156,70 +156,21 @@ void get_vertex_face(void)
 
 void calculate_normal_vertex(void)
 {
-
-	for (int i = 0; i < num_face * 3; i++)
-	{
-		if (i % 3 == 0) {
-
-			float x1, x2, y1, y2, z1, z2, t;
-
-			x1 = vertex[3 * face[i + 1]] - vertex[3 * face[i]];
-			x2 = vertex[3 * face[i + 2]] - vertex[3 * face[i]];
-			y1 = vertex[3 * face[i + 1] + 1] - vertex[3 * face[i] + 1];
-			y2 = vertex[3 * face[i + 2] + 1] - vertex[3 * face[i] + 1];
-			z1 = vertex[3 * face[i + 1] + 2] - vertex[3 * face[i] + 2];
-			z2 = vertex[3 * face[i + 2] + 2] - vertex[3 * face[i] + 2];
-
-			normal[i] = (y1 * z2 - z1 * y2);
-			normal[i + 1] = (x1 * z2 - z1 * x2) * (-1);
-			normal[i + 2] = (x1 * y2 - y1 * x2);
-
-			t = sqrt(normal[i] * normal[i] + normal[i + 1] * normal[i + 1] + normal[i + 2] * normal[i + 2]);
-			normal[i] = normal[i] / t;
-			normal[i + 1] = normal[i + 1] / t;
-			normal[i + 2] = normal[i + 2] / t;
-
-		}
-
-	}
-
-	int k = 0;
-	float sum[3] = { 0,0,0 };
-
-	for (int i = 0; i < num_vertex; i++)
-	{
-		sum[0] = 0;
-		sum[1] = 0;
-		sum[2] = 0;
-		k = 0;
-		for (int j = 0; j < num_face * 3; j++)
-		{
-			if (j % 3 == 0)
-			{
-				if (face[j] == i || face[j + 1] == i || face[j + 2] == i)
-				{
-					sum[0] += normal[j];
-					sum[1] += normal[j + 1];
-					sum[2] += normal[j + 2];
-					k++;
-				}
-			}
-		}
-		vertexnormal[i * 3] = sum[0] / k;
-		vertexnormal[i * 3 + 1] = sum[1] / k;
-		vertexnormal[i * 3 + 2] = sum[2] / k;
-	}
+	ifstream fin("../nv.txt");
+	for (int i = 0; i < 34836; i++)
+		fin >> vertexnormal[i * 3] >> vertexnormal[i * 3 + 1] >> vertexnormal[i * 3 + 2];
+	fin.close();
 }
 
 
 void CreateCube(float size)
 {
 	glBegin(GL_QUADS);
-	// Remove Front side
-	//glTexCoord2d(0.34, 0.25); glVertex3d(-1.0, -1.0, 1.0);
-	//glTexCoord2d(0.66, 0.25); glVertex3d(1.0, -1.0, 1.0);
-	//glTexCoord2d(0.66, 0.5); glVertex3d(1.0, 1.0, 1.0);
-	//glTexCoord2d(0.34, 0.5); glVertex3d(-1.0, 1.0, 1.0);
+
+	glTexCoord2d(0, 0); glVertex3d(-size, -size, size);
+	glTexCoord2d(1, 0); glVertex3d(size, -size, size);
+	glTexCoord2d(1, 1); glVertex3d(size, size, size);
+	glTexCoord2d(0, 1); glVertex3d(-size, size, size);
 
 	glTexCoord2d(0, 0); glVertex3d(-size, -size, -size);
 	glTexCoord2d(1, 0); glVertex3d(size, -size, -size);
@@ -304,7 +255,7 @@ void init(void)
 
 	// make synthetic cubemap data
 	makeSyntheticImages();
-	
+
 
 	//
 	// Creating a 2D texture from image
@@ -647,13 +598,13 @@ void keyboard(unsigned char key, int x, int y)
 	switch (key)
 	{
 	case '1':
-	
+
 		break;
 	case '2':
-	
+
 		break;
 	case '3':
-	
+
 		break;
 	case 'o':
 		positionz += 1;
@@ -736,6 +687,7 @@ void mouseMove(int x, int y) {
 
 int main(int argc, char** argv)
 {
+
 #ifdef MUSIC_ON
 	IGraphBuilder* pGraph = NULL;
 	IMediaControl* pControl = NULL;
@@ -745,16 +697,16 @@ int main(int argc, char** argv)
 		printf("ERROR - Could not initialize COM library");
 		return -1;
 	} // Create the filter graph manager and query for interfaces.
-	hr = CoCreateInstance(CLSID_FilterGraph, NULL, CLSCTX_INPROC_SERVER, IID_IGraphBuilder, (void **)&pGraph);
+	hr = CoCreateInstance(CLSID_FilterGraph, NULL, CLSCTX_INPROC_SERVER, IID_IGraphBuilder, (void**)& pGraph);
 	if (FAILED(hr)) {
 		printf("ERROR - Could not create the Filter Graph Manager.");
 		return -1;
-	} 
-	hr = pGraph->QueryInterface(IID_IMediaControl, (void **)&pControl);
-	hr = pGraph->QueryInterface(IID_IMediaEvent, (void **)&pEvent);
+	}
+	hr = pGraph->QueryInterface(IID_IMediaControl, (void**)& pControl);
+	hr = pGraph->QueryInterface(IID_IMediaEvent, (void**)& pEvent);
 	// Build the graph. IMPORTANT: Change this string to a file on your system.
 	hr = pGraph->RenderFile(L"../BGM.mp3", NULL);
-	if (SUCCEEDED(hr))	{
+	if (SUCCEEDED(hr)) {
 		// Run the graph.
 		hr = pControl->Run();
 		if (SUCCEEDED(hr)) {
@@ -767,9 +719,8 @@ int main(int argc, char** argv)
 	pEvent->Release();
 	pGraph->Release();
 	CoUninitialize();
-
-
 #endif
+
 
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
@@ -778,10 +729,9 @@ int main(int argc, char** argv)
 	glutCreateWindow(argv[0]);
 	init();
 	stopwatch(1); // stopwatch ON
-	glutSetCursor(GLUT_CURSOR_NONE);
-	//get_vertex_face();
-	//calculate_normal_vertex();
-
+	glutSetCursor(GLUT_CURSOR_DESTROY);
+	get_vertex_face();
+	calculate_normal_vertex();
 	glutDisplayFunc(display);
 	glutIdleFunc(idle);
 	glutReshapeFunc(reshape);
