@@ -414,17 +414,53 @@ void update_cubemap()
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 // text added
+// text added
+
+void secToHHMMSS(int secs, char* s, size_t size) {
+	int hour, min, sec;
+
+	sec = secs % 60;
+	min = secs / 60 % 60;
+	//hour = secs / 3600;
+	sprintf_s(s, size, "%02d:%02d", min, sec);
+}
+
+int stopwatch(int onOff) {
+	static int oldTime;
+
+	if (onOff == 1) { // Timer on
+		oldTime = (int)time(NULL);
+		return oldTime;
+	}
+
+	if (onOff == 0) { //Timer off
+		secToHHMMSS(
+			(int)time(NULL) - oldTime,
+			timerBuffer,
+			sizeof(timerBuffer)
+		);
+		return (int)time(NULL) - oldTime;
+	}
+
+}
+
 void text(double x, double y)
 {
 	char text[32];
-
-	sprintf(text, "Zoom: %.1f", zoom);
-
-	glColor3f(1.0f, 1.0f, 1.0f);
-
+	char text2[32];
+	//sprintf(text, ": %.1f", zoom);
+	int sec = stopwatch(0);
+	int score = 100 * sec;
+	sprintf(text, "TIME: %s\n", timerBuffer);
+	sprintf(text2, "Score: %d\n", score);
+	glColor3f(0.0, 0.0, 0.0);
 	glRasterPos2f(x, y);
 	for (int i = 0; text[i] != '\0'; i++)
 		glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, text[i]);
+	glColor3f(0.0, 0.0, 0.0);
+	glRasterPos2f(x, y - 0.05);
+	for (int i = 0; text2[i] != '\0'; i++)
+		glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, text2[i]);
 }
 void display(void)
 {
@@ -735,7 +771,8 @@ int main(int argc, char** argv)
 	glutInitWindowPosition(100, 100);
 	glutCreateWindow(argv[0]);
 	init();
-
+	stopwatch(1); // stopwatch ON
+	glutSetCursor(GLUT_CURSOR_NUM);
 	//get_vertex_face();
 	//calculate_normal_vertex();
 
