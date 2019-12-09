@@ -24,9 +24,9 @@
 #include <time.h>
 #include <fstream>
 using namespace std;
- //
- // Definitions
- //
+//
+// Definitions
+//
 float eyePosition[3] = { 0,0,1 };
 float up[3] = { 0,1,0 };
 float scale = 1;
@@ -162,8 +162,8 @@ void calculate_normal_vertex(void)
 void CreateCube(float size)
 {
 	glBegin(GL_QUADS);
-						
-	glTexCoord2d(0, 0);glVertex3d(-size, -size, size);
+
+	glTexCoord2d(0, 0); glVertex3d(-size, -size, size);
 	glTexCoord2d(1, 0); glVertex3d(size, -size, size);
 	glTexCoord2d(1, 1); glVertex3d(size, size, size);
 	glTexCoord2d(0, 1); glVertex3d(-size, size, size);
@@ -251,7 +251,7 @@ void init(void)
 
 	// make synthetic cubemap data
 	makeSyntheticImages();
-	
+
 
 	//
 	// Creating a 2D texture from image
@@ -594,13 +594,13 @@ void keyboard(unsigned char key, int x, int y)
 	switch (key)
 	{
 	case '1':
-	
+
 		break;
 	case '2':
-	
+
 		break;
 	case '3':
-	
+
 		break;
 	case 'o':
 		positionz += 1;
@@ -690,10 +690,9 @@ int main(int argc, char** argv)
 	glutCreateWindow(argv[0]);
 	init();
 	stopwatch(1); // stopwatch ON
-	glutSetCursor(GLUT_CURSOR_NONE);
-	//get_vertex_face();
-	//calculate_normal_vertex();
-
+	glutSetCursor(GLUT_CURSOR_DESTROY);
+	get_vertex_face();
+	calculate_normal_vertex();
 	glutDisplayFunc(display);
 	glutIdleFunc(idle);
 	glutReshapeFunc(reshape);
