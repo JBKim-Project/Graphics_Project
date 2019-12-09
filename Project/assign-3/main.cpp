@@ -284,7 +284,7 @@ void init(void)
 
 	// make synthetic cubemap data
 	makeSyntheticImages();
-	
+
 
 	//
 	// Creating a 2D texture from image
