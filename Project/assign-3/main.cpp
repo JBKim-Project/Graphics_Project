@@ -162,7 +162,6 @@ void calculate_normal_vertex(void)
 void CreateCube(float size)
 {
 	glBegin(GL_QUADS);
-	 Remove Front side
 						
 	glTexCoord2d(0, 0);glVertex3d(-size, -size, size);
 	glTexCoord2d(1, 0); glVertex3d(size, -size, size);
