@@ -22,9 +22,14 @@
 #include <stdio.h>
 #include <GL/glew.h>
 
+
+
  //
  // Definitions
  //
+float eyePosition[3] = { 0,0,1 };
+float up[3] = { 0,1,0 };
+float scale = 1;
 
 GLfloat Ipos[4] = { 0,0,10,0 };
 GLfloat diffuse[] = { 1,1,1,0 };
@@ -53,6 +58,8 @@ int* face = NULL;
 float* normal = NULL;
 float* vertexnormal = NULL;
 int num_vertex, num_face, zero;
+
+
 
 typedef struct {
 	unsigned char x, y, z, w;
@@ -185,7 +192,7 @@ void calculate_normal_vertex(void)
 }
 
 
-void CreateCube(void)
+void CreateCube(float size)
 {
 	glBegin(GL_QUADS);
 	// Remove Front side
@@ -194,30 +201,30 @@ void CreateCube(void)
 	//glTexCoord2d(0.66, 0.5); glVertex3d(1.0, 1.0, 1.0);
 	//glTexCoord2d(0.34, 0.5); glVertex3d(-1.0, 1.0, 1.0);
 
-	glTexCoord2d(0, 0); glVertex3d(-1.0, -1.0, -1.0);
-	glTexCoord2d(1, 0); glVertex3d(1.0, -1.0, -1.0);
-	glTexCoord2d(1, 1); glVertex3d(1.0, -1.0, 1.0);
-	glTexCoord2d(0, 1); glVertex3d(-1.0, -1.0, 1.0);
+	glTexCoord2d(0, 0); glVertex3d(-size, -size, -size);
+	glTexCoord2d(1, 0); glVertex3d(size, -size, -size);
+	glTexCoord2d(1, 1); glVertex3d(size, -size, size);
+	glTexCoord2d(0, 1); glVertex3d(-size, -size, size);
 
-	glTexCoord2d(0, 0); glVertex3d(-1.0, 1.0, 1.0);
-	glTexCoord2d(1, 0); glVertex3d(1.0, 1.0, 1.0);
-	glTexCoord2d(1, 1); glVertex3d(1.0, 1.0, -1.0);
-	glTexCoord2d(0, 1); glVertex3d(-1.0, 1.0, -1.0);
+	glTexCoord2d(0, 0); glVertex3d(-size, size, size);
+	glTexCoord2d(1, 0); glVertex3d(size, size, size);
+	glTexCoord2d(1, 1); glVertex3d(size, size, -size);
+	glTexCoord2d(0, 1); glVertex3d(-size, size, -size);
 
-	glTexCoord2d(0, 0); glVertex3d(-1.0, 1.0, -1.0);
-	glTexCoord2d(1, 0); glVertex3d(1.0, 1.0, -1.0);
-	glTexCoord2d(1, 1); glVertex3d(1.0, -1.0, -1.0);
-	glTexCoord2d(0, 1); glVertex3d(-1.0, -1.0, -1.0);
+	glTexCoord2d(0, 0); glVertex3d(-size, size, -size);
+	glTexCoord2d(1, 0); glVertex3d(size, size, -size);
+	glTexCoord2d(1, 1); glVertex3d(size, -size, -size);
+	glTexCoord2d(0, 1); glVertex3d(-size, -size, -size);
 
-	glTexCoord2d(0, 0); glVertex3d(-1.0, -1.0, 1.0);
-	glTexCoord2d(1, 0); glVertex3d(-1.0, 1.0, 1.0);
-	glTexCoord2d(1, 1); glVertex3d(-1.0, 1.0, -1.0);
-	glTexCoord2d(0, 1); glVertex3d(-1.0, -1.0, -1.0);
+	glTexCoord2d(0, 0); glVertex3d(-size, -size, size);
+	glTexCoord2d(1, 0); glVertex3d(-size, size, size);
+	glTexCoord2d(1, 1); glVertex3d(-size, size, -size);
+	glTexCoord2d(0, 1); glVertex3d(-size, -size, -size);
 
-	glTexCoord2d(0, 0); glVertex3d(1.0, 1.0, 1.0);
-	glTexCoord2d(1, 0); glVertex3d(1.0, -1.0, 1.0);
-	glTexCoord2d(1, 1); glVertex3d(1.0, -1.0, -1.0);
-	glTexCoord2d(0, 1); glVertex3d(1.0, 1.0, -1.0);
+	glTexCoord2d(0, 0); glVertex3d(size, size, size);
+	glTexCoord2d(1, 0); glVertex3d(size, -size, size);
+	glTexCoord2d(1, 1); glVertex3d(size, -size, -size);
+	glTexCoord2d(0, 1); glVertex3d(size, size, -size);
 	glEnd();
 }
 
@@ -277,6 +284,7 @@ void init(void)
 
 	// make synthetic cubemap data
 	makeSyntheticImages();
+	
 
 	//
 	// Creating a 2D texture from image
@@ -331,61 +339,7 @@ void init(void)
 
 
 // generate cubemap on-the-fly
-#ifdef DYNAMIC_CUBEMAP
-	//RGBA8 Cubemap texture, 24 bit depth texture, 256x256
-	glGenTextures(1, &cube_tex);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, cube_tex);
 
-	// ToDo...
-
-
-	glTexParameteri(GL_TEXTURE_CUBE_MAP_EXT, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP_EXT, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP_EXT, GL_TEXTURE_WRAP_R, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP_EXT, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP_EXT, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-
-	glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X_EXT, 0, GL_RGBA, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-	glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X_EXT, 0, GL_RGBA, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-	glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Y_EXT, 0, GL_RGBA, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-	glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y_EXT, 0, GL_RGBA, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-	glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Z_EXT, 0, GL_RGBA, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-	glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z_EXT, 0, GL_RGBA, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-
-	glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_REFLECTION_MAP_EXT);
-	glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_REFLECTION_MAP_EXT);
-	glTexGeni(GL_R, GL_TEXTURE_GEN_MODE, GL_REFLECTION_MAP_EXT);
-
-	//
-	// creating FBO and attach cube map texture
-	//
-
-	//-------------------------
-	glGenFramebuffers(1, &fb);
-	glBindFramebuffer(GL_FRAMEBUFFER, fb);
-	//Attach one of the faces of the Cubemap texture to this FBO
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X, cube_tex, 0);
-	//-------------------------
-	glGenRenderbuffers(1, &depth_rb);
-	glBindRenderbuffer(GL_RENDERBUFFER, depth_rb);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, imageSize, imageSize);
-	//-------------------------
-	//Attach depth buffer to FBO
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depth_rb);
-	//-------------------------
-	//Does the GPU support current FBO configuration?
-	GLenum status;
-	status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-	switch (status)
-	{
-	case GL_FRAMEBUFFER_COMPLETE:
-		std::cout << "good" << std::endl; break;
-	default:
-		assert(false); break;
-	}
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-#endif
 }
 
 void idle()
@@ -407,7 +361,7 @@ void update_cubemap()
 
 	glLoadIdentity();
 	gluLookAt(0, 0, 0, 1, 0, 0, 0, 1, 0);
-	CreateCube();
+	CreateCube(10.0);
 	// render the entire scene here...
 
 	// render to -x face
@@ -416,7 +370,7 @@ void update_cubemap()
 
 	glLoadIdentity();
 	gluLookAt(0, 0, 0, -1, 0, 0, 0, 1, 0);
-	CreateCube();
+	CreateCube(10.0);
 
 	// render the entire scene here...
 
@@ -426,7 +380,7 @@ void update_cubemap()
 
 	glLoadIdentity();
 	gluLookAt(0, 0, 0, 0, 1, 0, 0, 1, 0);
-	CreateCube();
+	CreateCube(10.0);
 	// render the entire scene here...
 
 	// render to -y face
@@ -435,7 +389,7 @@ void update_cubemap()
 
 	glLoadIdentity();
 	gluLookAt(0, 0, 0, 0, -1, 0, 0, 1, 0);
-	CreateCube();
+	CreateCube(10.0);
 	// render the entire scene here...
 
 	// render to +z face
@@ -444,7 +398,7 @@ void update_cubemap()
 
 	glLoadIdentity();
 	gluLookAt(0, 0, 0, 0, 0, 1, 0, 1, 0);
-	CreateCube();
+	CreateCube(10.0);
 	// render the entire scene here...
 
 	// render to -z face
@@ -453,7 +407,7 @@ void update_cubemap()
 
 	glLoadIdentity();
 	gluLookAt(0, 0, 0, 0, 0, -1, 0, 1, 0);
-	CreateCube();
+	CreateCube(10.0);
 	// render the entire scene here...
 
 	// unbind FBO
@@ -493,7 +447,7 @@ void display(void)
 
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
-		gluLookAt(0, 0.0, 10.0,
+		gluLookAt(eyePosition[0], eyePosition[1], eyePosition[2],
 			0.0, 0.0, 0.0,
 			0.0f, 1.0f, 0.0f);
 		glEnable(GL_TEXTURE_2D);
@@ -503,7 +457,7 @@ void display(void)
 		//glRotatef(anglex, 1.0f, 0.0f, 0.0f);
 		//glRotatef(angley, 0.0f, 1.0f, 0.0f);
 
-		CreateCube();
+		CreateCube(10.0);
 		glPopMatrix();
 
 		//glPushMatrix();
@@ -514,15 +468,13 @@ void display(void)
 		//glPopMatrix();
 
 
-
-
 		glLoadIdentity();
 		gluLookAt(0, 0.0, 3.0,
 			0.0, 0.0, 0.0,
 			0.0f, 1.0f, 0.0f);
 		glPushMatrix();
 		text(-0.6, -0.6); // text added
-		glTranslatef(0, 0, 1);
+		glTranslatef(positionx, positiony, 1);
 		glScalef(zoom, zoom, zoom); //scale up down 
 
 
@@ -568,6 +520,15 @@ void display(void)
 
 		glPopMatrix();
 
+		glPushMatrix();
+		glTranslatef(-0.3, time * 0.01, 1 + time);
+		//glColor3f(0, 0, 1);
+		//glTranslatef(positionx, positiony, positionz);
+		glRotatef(anglex, 1.0f, 0.0f, 0.0f);
+		glRotatef(angley, 0.0f, 1.0f, 0.0f);
+		glutSolidSphere(0.05f, 100, 100);
+
+		glPopMatrix();
 
 
 		glDisable(GL_TEXTURE_2D);
@@ -595,7 +556,7 @@ void reshape(int w, int h)
 	glViewport(0, 0, (GLsizei)w, (GLsizei)h);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	gluPerspective(40.0, (GLfloat)w / (GLfloat)h, 1.0, 300.0);
+	gluPerspective(40.0, (GLfloat)w / (GLfloat)h, 0.1, 300.0);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 	glTranslatef(0.0, 0.0, -20.0);
@@ -634,77 +595,135 @@ void keyboard(unsigned char key, int x, int y)
 	}
 	//glutPostRedisplay();
 }
+//
+//void mousemotion(int x, int y)
+//{
+//	printf("x: %d\n", x);
+//	printf("y: %d\n", y);
+//
+//	mouse_dx = x - mouse_prev_x;
+//	mouse_dy = y - mouse_prev_y;
+//
+//	mouse_prev_x = x;
+//	mouse_prev_y = y;
+//
+//	if (left_button_pressed == true) {
+//		anglex += (float)mouse_dy;
+//		angley -= (float)mouse_dx;
+//	}
+//	else if (middle_button_pressed == true) {
+//		positionx += mouse_dx * 0.006;
+//		positiony -= mouse_dy * 0.006;
+//	}
+//
+//	glutPostRedisplay();
+//
+//}
+//
+//void mousebutton(int button, int state, int x, int y)
+//{
+//	if (button == GLUT_RIGHT_BUTTON)
+//	{
+//		if (state == GLUT_DOWN)
+//			zoom -= 0.1;
+//
+//	}
+//	else if (button == GLUT_MIDDLE_BUTTON)
+//	{
+//		if (state == GLUT_DOWN)
+//		{
+//			if (middle_button_pressed == false) {
+//				middle_button_pressed = true;
+//				mouse_prev_x = x;
+//				mouse_prev_y = y;
+//			}
+//		}
+//
+//		else if (state == GLUT_UP)
+//		{
+//			middle_button_pressed = false;
+//			mouse_dx = 0;
+//			mouse_dy = 0;
+//		}
+//	}
+//
+//	else if (button == GLUT_LEFT_BUTTON) {
+//
+//		if (state == GLUT_DOWN)
+//		{
+//			if (left_button_pressed == false) {
+//				left_button_pressed = true;
+//				mouse_prev_x = x;
+//				mouse_prev_y = y;
+//			}
+//		}
+//		else if (state == GLUT_UP)
+//		{
+//			left_button_pressed = false;
+//			mouse_dx = 0;
+//			mouse_dy = 0;
+//		}
+//
+//	}
+//
+//	glutPostRedisplay();
+//}
+//
 
-void mousemotion(int x, int y)
-{
-	printf("x: %d\n", x);
-	printf("y: %d\n", y);
-
-	mouse_dx = x - mouse_prev_x;
-	mouse_dy = y - mouse_prev_y;
-
-	mouse_prev_x = x;
-	mouse_prev_y = y;
-
-	if (left_button_pressed == true) {
-		anglex += (float)mouse_dy;
-		angley -= (float)mouse_dx;
-	}
-	else if (middle_button_pressed == true) {
-		positionx += mouse_dx * 0.006;
-		positiony -= mouse_dy * 0.006;
-	}
-
-	glutPostRedisplay();
-
+int mouseButton = -1;
+int mousePos[2];
+void  mouseClick(int button, int state, int x, int y) {
+	mouseButton = button;
+	mousePos[0] = x;
+	mousePos[1] = y;
 }
+float* normalize(float* a) {
+	float* t = new float[3];
+	t[0] = a[0] / sqrt(a[0] * a[0] + a[1] * a[1] + a[2] * a[2]);
+	t[1] = a[1] / sqrt(a[0] * a[0] + a[1] * a[1] + a[2] * a[2]);
+	t[2] = a[2] / sqrt(a[0] * a[0] + a[1] * a[1] + a[2] * a[2]);
+	return t;
+}
+float* cross_product(float* a, float* b) {
+	float* t = new float[3];
+	t[0] = a[1] * b[2] - b[1] * a[2];
+	t[1] = a[2] * b[0] - b[2] * a[0];
+	t[2] = a[0] * b[1] - b[0] * a[1];
+	return t;
+}
+void mouseMove(int x, int y) {
+	if (mouseButton == GLUT_LEFT_BUTTON) {
+		float* t1 = new float[3]{ -eyePosition[0], -eyePosition[1], -eyePosition[2] };
+		float* t2 = normalize(cross_product(up, t1));
+		float t3[3];
+		t3[0] = eyePosition[0] + t2[0] * (x - mousePos[0]) / 1000;
+		t3[1] = eyePosition[1] + t2[1] * (x - mousePos[0]) / 1000;
+		t3[2] = eyePosition[2] + t2[2] * (x - mousePos[0]) / 1000;
+		t2 = normalize(t3);
+		eyePosition[0] = t2[0] * 5;
+		eyePosition[1] = t2[1] * 5;
+		eyePosition[2] = t2[2] * 5;
 
-void mousebutton(int button, int state, int x, int y)
-{
-	if (button == GLUT_RIGHT_BUTTON)
-	{
-		if (state == GLUT_DOWN)
-			zoom -= 0.1;
+		t1 = new float[3]{ -eyePosition[0], -eyePosition[1], -eyePosition[2] };
+		t2 = normalize(cross_product(up, t1));
+		t3[0] = eyePosition[0] + up[0] * (y - mousePos[1]) / 1000;
+		t3[1] = eyePosition[1] + up[1] * (y - mousePos[1]) / 1000;
+		t3[2] = eyePosition[2] + up[2] * (y - mousePos[1]) / 1000;
+		t2 = normalize(cross_product(t1, t2));
+		up[0] = t2[0];
+		up[1] = t2[1];
+		up[2] = t2[2];
 
-	}
-	else if (button == GLUT_MIDDLE_BUTTON)
-	{
-		if (state == GLUT_DOWN)
-		{
-			if (middle_button_pressed == false) {
-				middle_button_pressed = true;
-				mouse_prev_x = x;
-				mouse_prev_y = y;
-			}
-		}
+		t2 = normalize(t3);
+		eyePosition[0] = t2[0] * 5;
+		eyePosition[1] = t2[1] * 5;
+		eyePosition[2] = t2[2] * 5;
 
-		else if (state == GLUT_UP)
-		{
-			middle_button_pressed = false;
-			mouse_dx = 0;
-			mouse_dy = 0;
-		}
-	}
-
-	else if (button == GLUT_LEFT_BUTTON) {
-
-		if (state == GLUT_DOWN)
-		{
-			if (left_button_pressed == false) {
-				left_button_pressed = true;
-				mouse_prev_x = x;
-				mouse_prev_y = y;
-			}
-		}
-		else if (state == GLUT_UP)
-		{
-			left_button_pressed = false;
-			mouse_dx = 0;
-			mouse_dy = 0;
-		}
 
 	}
-
+	if (mouseButton == GLUT_RIGHT_BUTTON) {
+		scale += 1.0 * (mousePos[1] - y) / 20000;
+	}
 	glutPostRedisplay();
 }
 
@@ -717,16 +736,15 @@ int main(int argc, char** argv)
 	glutCreateWindow(argv[0]);
 	init();
 
-	get_vertex_face();
-	calculate_normal_vertex();
+	//get_vertex_face();
+	//calculate_normal_vertex();
 
 	glutDisplayFunc(display);
 	glutIdleFunc(idle);
 	glutReshapeFunc(reshape);
 	glutKeyboardFunc(keyboard);
-	glutMouseFunc(mousebutton);
-	glutMotionFunc(mousemotion);
-
+	glutMouseFunc(mouseClick);
+	glutMotionFunc(mouseMove);
 
 	glutMainLoop();
 	return 0;
