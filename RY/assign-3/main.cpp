@@ -31,10 +31,10 @@ float eyePosition[3] = { 0,0,1 };
 float up[3] = { 0,1,0 };
 float scale = 1;
 
-GLfloat Ipos[4] = { 0,0,10,0 };
-GLfloat diffuse[] = { 1,1,1,0 };
+GLfloat Ipos[4] = { 1,1,1,0 };
+GLfloat diffuse[] = { 1,1,1,1 };
 GLfloat specular[] = { 1,1,1,0 };
-GLfloat ambient[] = { 1,1,1,0 };
+GLfloat ambient[] = { 1,1,1,1 };
 
 int time = 0;
 int check = 0;
@@ -59,7 +59,22 @@ float* normal = NULL;
 float* vertexnormal = NULL;
 int num_vertex, num_face, zero;
 
+struct SphereComponent {
+	float startPositionx = 2;
+	float startPositiony = 0;
+	float startPositionz = 0;
+	float directionx = 0;
+	float directiony = 0;
+	float directionz = 0;
+	int checkx = 0;
+	int checky = 0;
+	int checkz = 0;
+	float speedx = 0;
+	float speedy = 0;
+	float speedz = 0;
+};
 
+struct SphereComponent SC[20];
 
 typedef struct {
 	unsigned char x, y, z, w;
@@ -192,7 +207,7 @@ void calculate_normal_vertex(void)
 }
 
 
-void CreateCube(void)
+void CreateCube(float size)
 {
 	glBegin(GL_QUADS);
 	// Remove Front side
@@ -201,30 +216,30 @@ void CreateCube(void)
 	//glTexCoord2d(0.66, 0.5); glVertex3d(1.0, 1.0, 1.0);
 	//glTexCoord2d(0.34, 0.5); glVertex3d(-1.0, 1.0, 1.0);
 
-	glTexCoord2d(0, 0); glVertex3d(-1.0, -1.0, -1.0);
-	glTexCoord2d(1, 0); glVertex3d(1.0, -1.0, -1.0);
-	glTexCoord2d(1, 1); glVertex3d(1.0, -1.0, 1.0);
-	glTexCoord2d(0, 1); glVertex3d(-1.0, -1.0, 1.0);
+	glTexCoord2d(0, 0); glVertex3d(-size, -size, -size);
+	glTexCoord2d(1, 0); glVertex3d(size, -size, -size);
+	glTexCoord2d(1, 1); glVertex3d(size, -size, size);
+	glTexCoord2d(0, 1); glVertex3d(-size, -size, size);
 
-	glTexCoord2d(0, 0); glVertex3d(-1.0, 1.0, 1.0);
-	glTexCoord2d(1, 0); glVertex3d(1.0, 1.0, 1.0);
-	glTexCoord2d(1, 1); glVertex3d(1.0, 1.0, -1.0);
-	glTexCoord2d(0, 1); glVertex3d(-1.0, 1.0, -1.0);
+	glTexCoord2d(0, 0); glVertex3d(-size, size, size);
+	glTexCoord2d(1, 0); glVertex3d(size, size, size);
+	glTexCoord2d(1, 1); glVertex3d(size, size, -size);
+	glTexCoord2d(0, 1); glVertex3d(-size, size, -size);
 
-	glTexCoord2d(0, 0); glVertex3d(-1.0, 1.0, -1.0);
-	glTexCoord2d(1, 0); glVertex3d(1.0, 1.0, -1.0);
-	glTexCoord2d(1, 1); glVertex3d(1.0, -1.0, -1.0);
-	glTexCoord2d(0, 1); glVertex3d(-1.0, -1.0, -1.0);
+	glTexCoord2d(0, 0); glVertex3d(-size, size, -size);
+	glTexCoord2d(1, 0); glVertex3d(size, size, -size);
+	glTexCoord2d(1, 1); glVertex3d(size, -size, -size);
+	glTexCoord2d(0, 1); glVertex3d(-size, -size, -size);
 
-	glTexCoord2d(0, 0); glVertex3d(-1.0, -1.0, 1.0);
-	glTexCoord2d(1, 0); glVertex3d(-1.0, 1.0, 1.0);
-	glTexCoord2d(1, 1); glVertex3d(-1.0, 1.0, -1.0);
-	glTexCoord2d(0, 1); glVertex3d(-1.0, -1.0, -1.0);
+	glTexCoord2d(0, 0); glVertex3d(-size, -size, size);
+	glTexCoord2d(1, 0); glVertex3d(-size, size, size);
+	glTexCoord2d(1, 1); glVertex3d(-size, size, -size);
+	glTexCoord2d(0, 1); glVertex3d(-size, -size, -size);
 
-	glTexCoord2d(0, 0); glVertex3d(1.0, 1.0, 1.0);
-	glTexCoord2d(1, 0); glVertex3d(1.0, -1.0, 1.0);
-	glTexCoord2d(1, 1); glVertex3d(1.0, -1.0, -1.0);
-	glTexCoord2d(0, 1); glVertex3d(1.0, 1.0, -1.0);
+	glTexCoord2d(0, 0); glVertex3d(size, size, size);
+	glTexCoord2d(1, 0); glVertex3d(size, -size, size);
+	glTexCoord2d(1, 1); glVertex3d(size, -size, -size);
+	glTexCoord2d(0, 1); glVertex3d(size, size, -size);
 	glEnd();
 }
 
@@ -349,70 +364,6 @@ void idle()
 	glutPostRedisplay();
 }
 
-// dynamically update cubemap
-void update_cubemap()
-{
-	// bind FBO to render to texture
-	glBindFramebuffer(GL_FRAMEBUFFER, fb);
-
-	// render to +x face
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X, cube_tex, 0);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	glLoadIdentity();
-	gluLookAt(0, 0, 0, 1, 0, 0, 0, 1, 0);
-	CreateCube();
-	// render the entire scene here...
-
-	// render to -x face
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_NEGATIVE_X, cube_tex, 0);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	glLoadIdentity();
-	gluLookAt(0, 0, 0, -1, 0, 0, 0, 1, 0);
-	CreateCube();
-
-	// render the entire scene here...
-
-	// render to +y face
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_Y, cube_tex, 0);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	glLoadIdentity();
-	gluLookAt(0, 0, 0, 0, 1, 0, 0, 1, 0);
-	CreateCube();
-	// render the entire scene here...
-
-	// render to -y face
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, cube_tex, 0);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	glLoadIdentity();
-	gluLookAt(0, 0, 0, 0, -1, 0, 0, 1, 0);
-	CreateCube();
-	// render the entire scene here...
-
-	// render to +z face
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_Z, cube_tex, 0);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	glLoadIdentity();
-	gluLookAt(0, 0, 0, 0, 0, 1, 0, 1, 0);
-	CreateCube();
-	// render the entire scene here...
-
-	// render to -z face
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, cube_tex, 0);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	glLoadIdentity();
-	gluLookAt(0, 0, 0, 0, 0, -1, 0, 1, 0);
-	CreateCube();
-	// render the entire scene here...
-
-	// unbind FBO
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-}
 // text added
 void text(double x, double y)
 {
@@ -426,6 +377,96 @@ void text(double x, double y)
 	for (int i = 0; text[i] != '\0'; i++)
 		glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, text[i]);
 }
+
+
+void convertDirection(int i)
+{
+	if (SC[i].startPositionx + SC[i].directionx < -1)
+		SC[i].checkx = 1;
+	else if (SC[i].startPositionx + SC[i].directionx > 1)
+		SC[i].checkx = 0;
+
+	if (SC[i].checkx == 1)
+		SC[i].directionx += SC[i].speedx;
+	else if (SC[i].checkx == 0)
+		SC[i].directionx -= SC[i].speedx;
+
+	if (SC[i].startPositiony + SC[i].directiony < -1)
+		SC[i].checky = 1;
+	else if (SC[i].startPositiony + SC[i].directiony > 1)
+		SC[i].checky = 0;
+	\
+		if (SC[i].checky == 1)
+			SC[i].directiony += SC[i].speedy;
+		else if (SC[i].checky == 0)
+			SC[i].directiony -= SC[i].speedy;
+
+	if (SC[i].startPositionz + SC[i].directionz < -1)
+		SC[i].checkz = 1;
+	else if (SC[i].startPositionz + SC[i].directionz > 1)
+		SC[i].checkz = 0;
+
+	if (SC[i].checkz == 1)
+		SC[i].directionz += SC[i].speedz;
+	else if (SC[i].checkz == 0)
+		SC[i].directionz -= SC[i].speedz;
+
+}
+
+void SettingPositionandDirection(int i)
+{
+	if (SC[i].startPositionx > 1.5)
+	{
+		if (i % 3 == 0) {
+			//srand(time(NULL));
+			SC[i].startPositionx = 1;
+			SC[i].startPositiony = float((rand() % 100)) / 100;
+			SC[i].startPositionz = float((rand() % 100)) / 100;
+			printf("%f %f %f\n", SC[i].startPositionx, SC[i].startPositiony, SC[i].startPositionz);
+		}
+		else if (i % 3 == 1) {
+			//srand(time(NULL));
+			SC[i].startPositionx = float((rand() % 100)) / 100;
+			SC[i].startPositiony = -1;
+			SC[i].startPositionz = float((rand() % 100)) / 100;
+		}
+		else if (i % 3 == 2) {
+			//srand(time(NULL));
+			SC[i].startPositionx = -1;
+			SC[i].startPositiony = float((rand() % 100)) / 100;
+			SC[i].startPositionz = float((rand() % 100)) / 100;
+		}
+
+		//srand(time(NULL));
+
+		SC[i].directionx = float((rand() % 50)) / 1000;
+		SC[i].directiony = float((rand() % 50)) / 1000;
+		SC[i].directionz = float((rand() % 50)) / 1000;
+
+		SC[i].checkx = 1;
+		SC[i].checky = 1;
+		SC[i].checkz = 1;
+
+		SC[i].speedx = float((rand() % 10)) / 1000;
+		SC[i].speedy = float((rand() % 10)) / 1000;
+		SC[i].speedz = float((rand() % 10)) / 1000;
+
+	}
+}
+
+void Make_Sphere(int i)
+{
+	glPushMatrix();
+	SettingPositionandDirection(i);
+	convertDirection(i);
+	glTranslatef(SC[i].startPositionx + SC[i].directionx, SC[i].startPositiony + SC[i].directiony, SC[i].startPositionz + SC[i].directionz);
+	glTranslatef(0, float(i) / 5, 1);
+	glutSolidSphere(0.15f, 100, 100);
+
+	glPopMatrix();
+
+}
+
 void display(void)
 {
 	// update dynamic cubemap per frame
@@ -457,7 +498,7 @@ void display(void)
 		//glRotatef(anglex, 1.0f, 0.0f, 0.0f);
 		//glRotatef(angley, 0.0f, 1.0f, 0.0f);
 
-		CreateCube();
+		CreateCube(10.0);
 		glPopMatrix();
 
 		//glPushMatrix();
@@ -467,7 +508,10 @@ void display(void)
 		////glTranslatef(positionx, positiony, 7);
 		//glPopMatrix();
 
+		for (int i = 0; i < 20; i++)
+			Make_Sphere(i);
 
+		
 		glLoadIdentity();
 		gluLookAt(0, 0.0, 3.0,
 			0.0, 0.0, 0.0,
@@ -520,6 +564,7 @@ void display(void)
 
 		glPopMatrix();
 
+		/*
 		glPushMatrix();
 		glTranslatef(-0.3, time * 0.01, 1 + time);
 		//glColor3f(0, 0, 1);
@@ -542,7 +587,7 @@ void display(void)
 			time = time + 0.005;
 		else
 			time = time - 0.005;
-
+		*/
 	}
 
 
@@ -556,7 +601,7 @@ void reshape(int w, int h)
 	glViewport(0, 0, (GLsizei)w, (GLsizei)h);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	gluPerspective(40.0, (GLfloat)w / (GLfloat)h, 1.0, 300.0);
+	gluPerspective(40.0, (GLfloat)w / (GLfloat)h, 0.1, 300.0);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 	glTranslatef(0.0, 0.0, -20.0);
