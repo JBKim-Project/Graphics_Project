@@ -21,12 +21,13 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <GL/glew.h>
-
+#include <time.h>
 
 
  //
  // Definitions
  //
+
 float eyePosition[3] = { 0,0,1 };
 float up[3] = { 0,1,0 };
 float scale = 1;
@@ -36,7 +37,7 @@ GLfloat diffuse[] = { 1,1,1,0 };
 GLfloat specular[] = { 1,1,1,0 };
 GLfloat ambient[] = { 1,1,1,0 };
 
-int time = 0;
+int time_ = 0;
 int check = 0;
 
 int p = 1;
@@ -59,6 +60,7 @@ float* normal = NULL;
 float* vertexnormal = NULL;
 int num_vertex, num_face, zero;
 
+int score;
 
 
 typedef struct {
@@ -195,11 +197,11 @@ void calculate_normal_vertex(void)
 void CreateCube(float size)
 {
 	glBegin(GL_QUADS);
-	// Remove Front side
-	//glTexCoord2d(0.34, 0.25); glVertex3d(-1.0, -1.0, 1.0);
-	//glTexCoord2d(0.66, 0.25); glVertex3d(1.0, -1.0, 1.0);
-	//glTexCoord2d(0.66, 0.5); glVertex3d(1.0, 1.0, 1.0);
-	//glTexCoord2d(0.34, 0.5); glVertex3d(-1.0, 1.0, 1.0);
+
+	glTexCoord2d(0, 0); glVertex3d(-size, -size, size);
+	glTexCoord2d(1, 0); glVertex3d(size, -size, size);
+	glTexCoord2d(1, 1); glVertex3d(size, size, size);
+	glTexCoord2d(0, 1); glVertex3d(-size, size, size);
 
 	glTexCoord2d(0, 0); glVertex3d(-size, -size, -size);
 	glTexCoord2d(1, 0); glVertex3d(size, -size, -size);
@@ -225,6 +227,7 @@ void CreateCube(float size)
 	glTexCoord2d(1, 0); glVertex3d(size, -size, size);
 	glTexCoord2d(1, 1); glVertex3d(size, -size, -size);
 	glTexCoord2d(0, 1); glVertex3d(size, size, -size);
+
 	glEnd();
 }
 
@@ -415,6 +418,7 @@ void update_cubemap()
 }
 // text added
 // text added
+char timerBuffer[6 + 1]; // for stopwatch
 
 void secToHHMMSS(int secs, char* s, size_t size) {
 	int hour, min, sec;
@@ -440,6 +444,7 @@ int stopwatch(int onOff) {
 			sizeof(timerBuffer)
 		);
 		return (int)time(NULL) - oldTime;
+
 	}
 
 }
@@ -450,7 +455,7 @@ void text(double x, double y)
 	char text2[32];
 	//sprintf(text, ": %.1f", zoom);
 	int sec = stopwatch(0);
-	int score = 100 * sec;
+	score = 100 * sec;
 	sprintf(text, "TIME: %s\n", timerBuffer);
 	sprintf(text2, "Score: %d\n", score);
 	glColor3f(0.0, 0.0, 0.0);
@@ -509,7 +514,7 @@ void display(void)
 			0.0, 0.0, 0.0,
 			0.0f, 1.0f, 0.0f);
 		glPushMatrix();
-		text(-0.6, -0.6); // text added
+		text(-0.8, -0.8); // text added
 		glTranslatef(positionx, positiony, 1);
 		glScalef(zoom, zoom, zoom); //scale up down 
 
@@ -557,7 +562,7 @@ void display(void)
 		glPopMatrix();
 
 		glPushMatrix();
-		glTranslatef(-0.3, time * 0.01, 1 + time);
+		glTranslatef(-0.3, time_ * 0.01, 1 + time_);
 		//glColor3f(0, 0, 1);
 		//glTranslatef(positionx, positiony, positionz);
 		glRotatef(anglex, 1.0f, 0.0f, 0.0f);
@@ -569,15 +574,15 @@ void display(void)
 
 		glDisable(GL_TEXTURE_2D);
 
-		if (time > 1)
+		if (time_ > 1)
 			check = 1;
-		else if (time < -1)
+		else if (time_ < -1)
 			check = 0;
 
 		if (check == 0)
-			time = time + 0.005;
+			time_ = time_ + 0.005;
 		else
-			time = time - 0.005;
+			time_ = time_ - 0.005;
 
 	}
 
@@ -626,85 +631,15 @@ void keyboard(unsigned char key, int x, int y)
 		//printf("zoom: %f\n", zoom);
 		break;
 	case 27:
-		exit(0);
+
+		char msg[100];
+		wsprintf(msg, TEXT("Your score is %d."), score); //message
+		MessageBox(NULL, msg, TEXT("Game Over"), NULL); //Box name
+		exit(1);
 		break;
 	}
 	//glutPostRedisplay();
 }
-//
-//void mousemotion(int x, int y)
-//{
-//	printf("x: %d\n", x);
-//	printf("y: %d\n", y);
-//
-//	mouse_dx = x - mouse_prev_x;
-//	mouse_dy = y - mouse_prev_y;
-//
-//	mouse_prev_x = x;
-//	mouse_prev_y = y;
-//
-//	if (left_button_pressed == true) {
-//		anglex += (float)mouse_dy;
-//		angley -= (float)mouse_dx;
-//	}
-//	else if (middle_button_pressed == true) {
-//		positionx += mouse_dx * 0.006;
-//		positiony -= mouse_dy * 0.006;
-//	}
-//
-//	glutPostRedisplay();
-//
-//}
-//
-//void mousebutton(int button, int state, int x, int y)
-//{
-//	if (button == GLUT_RIGHT_BUTTON)
-//	{
-//		if (state == GLUT_DOWN)
-//			zoom -= 0.1;
-//
-//	}
-//	else if (button == GLUT_MIDDLE_BUTTON)
-//	{
-//		if (state == GLUT_DOWN)
-//		{
-//			if (middle_button_pressed == false) {
-//				middle_button_pressed = true;
-//				mouse_prev_x = x;
-//				mouse_prev_y = y;
-//			}
-//		}
-//
-//		else if (state == GLUT_UP)
-//		{
-//			middle_button_pressed = false;
-//			mouse_dx = 0;
-//			mouse_dy = 0;
-//		}
-//	}
-//
-//	else if (button == GLUT_LEFT_BUTTON) {
-//
-//		if (state == GLUT_DOWN)
-//		{
-//			if (left_button_pressed == false) {
-//				left_button_pressed = true;
-//				mouse_prev_x = x;
-//				mouse_prev_y = y;
-//			}
-//		}
-//		else if (state == GLUT_UP)
-//		{
-//			left_button_pressed = false;
-//			mouse_dx = 0;
-//			mouse_dy = 0;
-//		}
-//
-//	}
-//
-//	glutPostRedisplay();
-//}
-//
 
 int mouseButton = -1;
 int mousePos[2];
@@ -772,7 +707,7 @@ int main(int argc, char** argv)
 	glutCreateWindow(argv[0]);
 	init();
 	stopwatch(1); // stopwatch ON
-	glutSetCursor(GLUT_CURSOR_NUM);
+	glutSetCursor(GLUT_CURSOR_NONE);
 	//get_vertex_face();
 	//calculate_normal_vertex();
 
