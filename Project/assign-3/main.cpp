@@ -22,8 +22,8 @@
 #include <stdio.h>
 #include <GL/glew.h>
 #include <time.h>
-
-
+#include <fstream>
+using namespace std;
  //
  // Definitions
  //
@@ -152,59 +152,10 @@ void get_vertex_face(void)
 
 void calculate_normal_vertex(void)
 {
-
-	for (int i = 0; i < num_face * 3; i++)
-	{
-		if (i % 3 == 0) {
-
-			float x1, x2, y1, y2, z1, z2, t;
-
-			x1 = vertex[3 * face[i + 1]] - vertex[3 * face[i]];
-			x2 = vertex[3 * face[i + 2]] - vertex[3 * face[i]];
-			y1 = vertex[3 * face[i + 1] + 1] - vertex[3 * face[i] + 1];
-			y2 = vertex[3 * face[i + 2] + 1] - vertex[3 * face[i] + 1];
-			z1 = vertex[3 * face[i + 1] + 2] - vertex[3 * face[i] + 2];
-			z2 = vertex[3 * face[i + 2] + 2] - vertex[3 * face[i] + 2];
-
-			normal[i] = (y1 * z2 - z1 * y2);
-			normal[i + 1] = (x1 * z2 - z1 * x2) * (-1);
-			normal[i + 2] = (x1 * y2 - y1 * x2);
-
-			t = sqrt(normal[i] * normal[i] + normal[i + 1] * normal[i + 1] + normal[i + 2] * normal[i + 2]);
-			normal[i] = normal[i] / t;
-			normal[i + 1] = normal[i + 1] / t;
-			normal[i + 2] = normal[i + 2] / t;
-
-		}
-
-	}
-
-	int k = 0;
-	float sum[3] = { 0,0,0 };
-
-	for (int i = 0; i < num_vertex; i++)
-	{
-		sum[0] = 0;
-		sum[1] = 0;
-		sum[2] = 0;
-		k = 0;
-		for (int j = 0; j < num_face * 3; j++)
-		{
-			if (j % 3 == 0)
-			{
-				if (face[j] == i || face[j + 1] == i || face[j + 2] == i)
-				{
-					sum[0] += normal[j];
-					sum[1] += normal[j + 1];
-					sum[2] += normal[j + 2];
-					k++;
-				}
-			}
-		}
-		vertexnormal[i * 3] = sum[0] / k;
-		vertexnormal[i * 3 + 1] = sum[1] / k;
-		vertexnormal[i * 3 + 2] = sum[2] / k;
-	}
+	ifstream fin("../nv.txt");
+	for (int i = 0; i < 34836; i++)
+		fin >> vertexnormal[i * 3] >> vertexnormal[i * 3 + 1] >> vertexnormal[i * 3 + 2];
+	fin.close();
 }
 
 
