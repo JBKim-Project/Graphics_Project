@@ -23,9 +23,18 @@
 #include <GL/glew.h>
 #include <time.h>
 #include <fstream>
+//#define MUSIC_ON
 #ifdef MUSIC_ON
-#include <dshow.h>
-#pragma comment (lib, "strmiids.lib")
+#pragma comment(lib, "winmm.lib")
+#include "Mmsystem.h"
+#include "Digitalv.h"
+MCI_OPEN_PARMS m_mciOpenParms;
+MCI_PLAY_PARMS m_mciPlayParms;
+DWORD m_dwDeviceID;
+MCI_OPEN_PARMS mciOpen;
+MCI_PLAY_PARMS mciPlay;
+
+int dwID;
 #endif
 using namespace std;
 //
@@ -36,8 +45,8 @@ float up[3] = { 0,1,0 };
 float scale = 1;
 
 GLfloat Ipos[4] = { 1,1,1,0 };
-GLfloat diffuse[] = { 1,1,1,1 };
-GLfloat specular[] = { 1,1,1,0 };
+GLfloat diffuse[] = { 1,1,1,1};
+GLfloat specular[] = { 1,1,1,1 };
 GLfloat ambient[] = { 1,1,1,1 };
 
 int time_ = 0;
@@ -52,7 +61,7 @@ bool middle_button_pressed = false;
 
 float anglex = 0, angley = 0, anglez = 0;
 float zoom = 1.35;
-float positionx = 0, positiony = 0, positionz = 5;
+float positionx = 0, positiony = 0, positionz = 0;
 
 GLfloat width, height;
 
@@ -246,7 +255,6 @@ void init(void)
 
 	glewInit();
 
-	GLfloat diffuse[4] = { 1.0, 1.0, 1.0, 1.0 };
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glClearColor(1.0, 1.0, 1.0, 1.0);
@@ -465,26 +473,23 @@ void display(void)
 	glEnable(GL_LIGHT0);
 
 	glLightfv(GL_LIGHT0, GL_POSITION, Ipos);
-	//glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse);
+	glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse);
 	glLightfv(GL_LIGHT0, GL_SPECULAR, specular);
 	glLightfv(GL_LIGHT0, GL_AMBIENT, ambient);
-
+	
 
 	// render something here...
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
-	gluLookAt(eyePosition[0], eyePosition[1], eyePosition[2],
-		0.0, 0.0, 0.0,
+	gluLookAt(eyePosition[0] + positionx, eyePosition[1] + positiony, eyePosition[2] + positionz,
+		positionx, positiony, positionz,
 		0.0f, 1.0f, 0.0f);
 	glEnable(GL_TEXTURE_2D);
 	glPushMatrix();
 	glTranslatef(0, 0, 0);
 	glScalef(zoom, zoom, zoom);
-	glRotatef(anglex, 1.0f, 0.0f, 0.0f);
-	glRotatef(angley, 0.0f, 1.0f, 0.0f);
-
+	
 	CreateCube(10.0);
 	glPopMatrix();
 
@@ -529,16 +534,16 @@ void display(void)
 		0.0f, 1.0f, 0.0f);
 	glPushMatrix();
 	text(-0.8, -0.8); // text added
-	glTranslatef(positionx, positiony, 1);
+	//glTranslatef(positionx, positiony, 1);
 	glScalef(zoom, zoom, zoom); //scale up down 
 
 
-	GLfloat temp_matrix[16];
+	/*GLfloat temp_matrix[16];
 	glRotatef(anglex, 1.0f, 0.0f, 0.0f);
 	glRotatef(angley, 0.0f, 1.0f, 0.0f);
+*/
 
-
-	glColor3ub(169, 200, 250);
+//	glColor3ub(169, 200, 250);
 	GLuint vertexbuffer;
 	glGenBuffers(1, &vertexbuffer);
 	glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
@@ -560,6 +565,7 @@ void display(void)
 
 	glVertexPointer(3, GL_FLOAT, 0, (void*)0);
 	glNormalPointer(GL_FLOAT, 0, (void*)(num_vertex * 3 * 4));
+
 
 	glDrawElements(GL_TRIANGLES, num_face * 3, GL_UNSIGNED_INT, (void*)0);
 
@@ -597,8 +603,15 @@ void keyboard(unsigned char key, int x, int y)
 {
 	switch (key)
 	{
-	case '1':
-
+	case 'w':
+		positionx -= 0.1 * eyePosition[0];
+		positiony -= 0.1 * eyePosition[1];
+		positionz -= 0.1 * eyePosition[2];
+		break;
+	case 's':
+		positionx += 0.1 * eyePosition[0];
+		positiony += 0.1 * eyePosition[1];
+		positionz += 0.1 * eyePosition[2];
 		break;
 	case '2':
 
@@ -607,7 +620,7 @@ void keyboard(unsigned char key, int x, int y)
 
 		break;
 	case 'o':
-		positionz += 1;
+
 		break;
 
 	case 'b':
@@ -689,36 +702,28 @@ int main(int argc, char** argv)
 {
 
 #ifdef MUSIC_ON
-	IGraphBuilder* pGraph = NULL;
-	IMediaControl* pControl = NULL;
-	IMediaEvent* pEvent = NULL; // Initialize the COM library.
-	HRESULT hr = CoInitialize(NULL);
-	if (FAILED(hr)) {
-		printf("ERROR - Could not initialize COM library");
-		return -1;
-	} // Create the filter graph manager and query for interfaces.
-	hr = CoCreateInstance(CLSID_FilterGraph, NULL, CLSCTX_INPROC_SERVER, IID_IGraphBuilder, (void**)& pGraph);
-	if (FAILED(hr)) {
-		printf("ERROR - Could not create the Filter Graph Manager.");
-		return -1;
-	}
-	hr = pGraph->QueryInterface(IID_IMediaControl, (void**)& pControl);
-	hr = pGraph->QueryInterface(IID_IMediaEvent, (void**)& pEvent);
-	// Build the graph. IMPORTANT: Change this string to a file on your system.
-	hr = pGraph->RenderFile(L"../BGM.mp3", NULL);
-	if (SUCCEEDED(hr)) {
-		// Run the graph.
-		hr = pControl->Run();
-		if (SUCCEEDED(hr)) {
-			// Wait for completion.
-			long evCode;
-			pEvent->WaitForCompletion(INFINITE, &evCode);// Note: Do not use INFINITE in a real application, because it // can block indefinitely.
-		}
-	}
-	pControl->Release();
-	pEvent->Release();
-	pGraph->Release();
-	CoUninitialize();
+	mciOpen.lpstrElementName = "BGM.mp3"; // 파일 경로 입력
+	mciOpen.lpstrDeviceType = "mpegvideo";
+
+	mciSendCommand(NULL, MCI_OPEN, MCI_OPEN_ELEMENT | MCI_OPEN_TYPE,
+		(DWORD)(LPVOID)& mciOpen);
+
+	dwID = mciOpen.wDeviceID;
+
+	mciSendCommand(dwID, MCI_PLAY, MCI_DGV_PLAY_REPEAT, // play & repeat
+		(DWORD)(LPVOID)& m_mciPlayParms);
+
+
+	/* mciSendCommandW(dwID, MCI_PAUSE, MCI_NOTIFY,
+					(DWORD)(LPVOID)&m_mciPlayParms);     */// Pause
+
+	/* mciSendCommandW(dwID, MCI_RESUME, 0, NULL);       */// resume
+
+	/* mciSendCommandW(dwID, MCI_CLOSE, 0, NULL);        */// stop
+
+
+
+
 #endif
 
 
