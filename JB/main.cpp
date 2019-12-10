@@ -22,23 +22,55 @@
 #include <stdio.h>
 #include <GL/glew.h>
 #include <time.h>
+#include <fstream>
+//#define MUSIC_ON
+#ifdef MUSIC_ON
+#pragma comment(lib, "winmm.lib")
+#include "Mmsystem.h"
+#include "Digitalv.h"
+MCI_OPEN_PARMS m_mciOpenParms;
+MCI_PLAY_PARMS m_mciPlayParms;
+DWORD m_dwDeviceID;
+MCI_OPEN_PARMS mciOpen;
+MCI_PLAY_PARMS mciPlay;
 
-
- //
- // Definitions
- //
+int dwID;
+#endif
+using namespace std;
+//
+// Definitions
+//
 float eyePosition[3] = { 0,0,1 };
 float up[3] = { 0,1,0 };
 float scale = 1;
 
 GLfloat Ipos[4] = { 1,1,1,0 };
-GLfloat diffuse[] = { 1,1,1,1 };
-GLfloat specular[] = { 1,1,1,0 };
+GLfloat diffuse[] = { 1,1,1,1};
+GLfloat specular[] = { 1,1,1,1 };
 GLfloat ambient[] = { 1,1,1,1 };
+
+GLfloat diffuse3[] = { -1,-1,-1,1 };
+
+
+GLfloat Ipos2[4] = { 1,1,1,0 };
+GLfloat diffuse2[] = { 1,1,1,1 };
+GLfloat specular2[] = { 0,1,0,1 };
+GLfloat ambient2[] = { 0,1,0,1 };
+
+GLfloat Ipos4[4] = { 1,1,1,0 };
+GLfloat diffuse4[] = { 1,1,1,1 };
+GLfloat specular4[] = { 1,0.87,0,1 };
+GLfloat ambient4[] = { 1,0.87,0,1 };
+
+GLfloat Ipos8[4] = { 1,1,1,0 };
+GLfloat diffuse8[] = { 1,1,1,1 };
+GLfloat specular8[] = { 0,0,1,1 };
+GLfloat ambient8[] = { 0,0,1,1 };
 
 int time_ = 0;
 int check = 0;
 
+int secm;
 
 int mouse_prev_x = 0, mouse_prev_y = 0;
 int mouse_dx = 0, mouse_dy = 0;
@@ -48,7 +80,7 @@ bool middle_button_pressed = false;
 
 float anglex = 0, angley = 0, anglez = 0;
 float zoom = 1.35;
-float positionx = 0, positiony = 0, positionz = 5;
+float positionx = 0, positiony = 0, positionz = 0;
 
 GLfloat width, height;
 
@@ -75,7 +107,7 @@ struct SphereComponent {
 	float speedz = 0;
 };
 
-struct SphereComponent SC[20];
+struct SphereComponent SC[100];
 
 typedef struct {
 	unsigned char x, y, z, w;
@@ -152,70 +184,21 @@ void get_vertex_face(void)
 
 void calculate_normal_vertex(void)
 {
-
-	for (int i = 0; i < num_face * 3; i++)
-	{
-		if (i % 3 == 0) {
-
-			float x1, x2, y1, y2, z1, z2, t;
-
-			x1 = vertex[3 * face[i + 1]] - vertex[3 * face[i]];
-			x2 = vertex[3 * face[i + 2]] - vertex[3 * face[i]];
-			y1 = vertex[3 * face[i + 1] + 1] - vertex[3 * face[i] + 1];
-			y2 = vertex[3 * face[i + 2] + 1] - vertex[3 * face[i] + 1];
-			z1 = vertex[3 * face[i + 1] + 2] - vertex[3 * face[i] + 2];
-			z2 = vertex[3 * face[i + 2] + 2] - vertex[3 * face[i] + 2];
-
-			normal[i] = (y1 * z2 - z1 * y2);
-			normal[i + 1] = (x1 * z2 - z1 * x2) * (-1);
-			normal[i + 2] = (x1 * y2 - y1 * x2);
-
-			t = sqrt(normal[i] * normal[i] + normal[i + 1] * normal[i + 1] + normal[i + 2] * normal[i + 2]);
-			normal[i] = normal[i] / t;
-			normal[i + 1] = normal[i + 1] / t;
-			normal[i + 2] = normal[i + 2] / t;
-
-		}
-
-	}
-
-	int k = 0;
-	float sum[3] = { 0,0,0 };
-
-	for (int i = 0; i < num_vertex; i++)
-	{
-		sum[0] = 0;
-		sum[1] = 0;
-		sum[2] = 0;
-		k = 0;
-		for (int j = 0; j < num_face * 3; j++)
-		{
-			if (j % 3 == 0)
-			{
-				if (face[j] == i || face[j + 1] == i || face[j + 2] == i)
-				{
-					sum[0] += normal[j];
-					sum[1] += normal[j + 1];
-					sum[2] += normal[j + 2];
-					k++;
-				}
-			}
-		}
-		vertexnormal[i * 3] = sum[0] / k;
-		vertexnormal[i * 3 + 1] = sum[1] / k;
-		vertexnormal[i * 3 + 2] = sum[2] / k;
-	}
+	ifstream fin("../nv.txt");
+	for (int i = 0; i < 34836; i++)
+		fin >> vertexnormal[i * 3] >> vertexnormal[i * 3 + 1] >> vertexnormal[i * 3 + 2];
+	fin.close();
 }
 
 
 void CreateCube(float size)
 {
 	glBegin(GL_QUADS);
-	// Remove Front side
-	//glTexCoord2d(0.34, 0.25); glVertex3d(-1.0, -1.0, 1.0);
-	//glTexCoord2d(0.66, 0.25); glVertex3d(1.0, -1.0, 1.0);
-	//glTexCoord2d(0.66, 0.5); glVertex3d(1.0, 1.0, 1.0);
-	//glTexCoord2d(0.34, 0.5); glVertex3d(-1.0, 1.0, 1.0);
+
+	glTexCoord2d(0, 0); glVertex3d(-size, -size, size);
+	glTexCoord2d(1, 0); glVertex3d(size, -size, size);
+	glTexCoord2d(1, 1); glVertex3d(size, size, size);
+	glTexCoord2d(0, 1); glVertex3d(-size, size, size);
 
 	glTexCoord2d(0, 0); glVertex3d(-size, -size, -size);
 	glTexCoord2d(1, 0); glVertex3d(size, -size, -size);
@@ -291,7 +274,6 @@ void init(void)
 
 	glewInit();
 
-	GLfloat diffuse[4] = { 1.0, 1.0, 1.0, 1.0 };
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glClearColor(1.0, 1.0, 1.0, 1.0);
@@ -300,7 +282,7 @@ void init(void)
 
 	// make synthetic cubemap data
 	makeSyntheticImages();
-	
+
 
 	//
 	// Creating a 2D texture from image
@@ -368,7 +350,7 @@ void idle()
 char timerBuffer[6 + 1];
 void secToHHMMSS(int secs, char* s, size_t size) {
 	int hour, min, sec;
-
+	secm = secs;
 	sec = secs % 60;
 	min = secs / 60 % 60;
 	//hour = secs / 3600;
@@ -484,9 +466,9 @@ void SettingPositionandDirection(int i)
 		SC[i].checky = 1;
 		SC[i].checkz = 1;
 
-		SC[i].speedx = float((rand() % 10)) / 100;
-		SC[i].speedy = float((rand() % 10)) / 100;
-		SC[i].speedz = float((rand() % 10)) / 100;
+		SC[i].speedx = float((rand() % 10)) / 200;
+		SC[i].speedy = float((rand() % 10)) / 200;
+		SC[i].speedz = float((rand() % 10)) / 200;
 
 	}
 }
@@ -496,9 +478,31 @@ void Make_Sphere(int i)
 	glPushMatrix();
 	SettingPositionandDirection(i);
 	convertDirection(i);
-	glTranslatef(SC[i].startPositionx + SC[i].directionx, SC[i].startPositiony + SC[i].directiony, SC[i].startPositionz + SC[i].directionz);
-	glutSolidSphere(0.15f, 100, 100);
 
+	if (i < 40) {
+		glEnable(GL_LIGHT1);
+
+		glLightfv(GL_LIGHT1, GL_POSITION, Ipos2);
+		glLightfv(GL_LIGHT1, GL_DIFFUSE, diffuse2);
+		glLightfv(GL_LIGHT1, GL_SPECULAR, specular2);
+		glLightfv(GL_LIGHT1, GL_AMBIENT, ambient2);
+	}
+	else {
+		glEnable(GL_LIGHT5);
+
+		glLightfv(GL_LIGHT5, GL_POSITION, Ipos8);
+		glLightfv(GL_LIGHT5, GL_DIFFUSE, diffuse8);
+		glLightfv(GL_LIGHT5, GL_SPECULAR, specular8);
+		glLightfv(GL_LIGHT5, GL_AMBIENT, ambient8);
+	}
+	glTranslatef(SC[i].startPositionx + SC[i].directionx, SC[i].startPositiony + SC[i].directiony, SC[i].startPositionz + SC[i].directionz);
+	glutSolidSphere(0.2f, 100, 100);
+
+	if (i < 40) {
+		glDisable(GL_LIGHT1);
+	}
+	else
+		glDisable(GL_LIGHT5);
 	glPopMatrix();
 
 }
@@ -507,30 +511,41 @@ void display(void)
 {
 	// update dynamic cubemap per frame
 	glEnable(GL_LIGHTING);
-	glEnable(GL_LIGHT0);
-
-	glLightfv(GL_LIGHT0, GL_POSITION, Ipos);
-	//glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse);
-	glLightfv(GL_LIGHT0, GL_SPECULAR, specular);
-	glLightfv(GL_LIGHT0, GL_AMBIENT, ambient);
-
+	
+	
 
 	// render something here...
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
-	gluLookAt(eyePosition[0], eyePosition[1], eyePosition[2],
-		0.0, 0.0, 0.0,
+	gluLookAt(eyePosition[0] + positionx, eyePosition[1] + positiony, eyePosition[2] + positionz,
+		positionx, positiony, positionz,
 		0.0f, 1.0f, 0.0f);
 	glEnable(GL_TEXTURE_2D);
 	glPushMatrix();
+
+	glEnable(GL_LIGHT3);
+
+	glLightfv(GL_LIGHT3, GL_POSITION, Ipos);
+	glLightfv(GL_LIGHT3, GL_DIFFUSE, diffuse);
+	glLightfv(GL_LIGHT3, GL_SPECULAR, specular);
+	glLightfv(GL_LIGHT3, GL_AMBIENT, ambient);
+
+	glEnable(GL_LIGHT4);
+
+	glLightfv(GL_LIGHT4, GL_POSITION, Ipos);
+	glLightfv(GL_LIGHT4, GL_DIFFUSE, diffuse3);
+	glLightfv(GL_LIGHT4, GL_SPECULAR, specular);
+	glLightfv(GL_LIGHT4, GL_AMBIENT, ambient);
+
 	glTranslatef(0, 0, 0);
 	glScalef(zoom, zoom, zoom);
-	glRotatef(anglex, 1.0f, 0.0f, 0.0f);
-	glRotatef(angley, 0.0f, 1.0f, 0.0f);
-
+	
 	CreateCube(10.0);
+
+	glDisable(GL_LIGHT3);
+	glDisable(GL_LIGHT4);
+
 	glPopMatrix();
 
 	glPushMatrix();
@@ -564,9 +579,12 @@ void display(void)
 	//glTranslatef(positionx, positiony, 7);
 	//glPopMatrix();
 
-	for (int i = 0; i < 20; i++)
+	for (int i = 0; i < 40; i++)
 		Make_Sphere(i);
 
+	for (int i = 40; i < 40 + secm / 5; i++)
+		if ( i < 100 )
+			Make_Sphere(i);
 
 	glLoadIdentity();
 	gluLookAt(0, 0.0, 3.0,
@@ -574,16 +592,26 @@ void display(void)
 		0.0f, 1.0f, 0.0f);
 	glPushMatrix();
 	text(-0.8, -0.8); // text added
-	glTranslatef(positionx, positiony, 1);
+	glPopMatrix();
+
+	glPushMatrix();
+
+	glEnable(GL_LIGHT0);
+
+	glLightfv(GL_LIGHT0, GL_POSITION, Ipos4);
+	glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse4);
+	glLightfv(GL_LIGHT0, GL_SPECULAR, specular4);
+	glLightfv(GL_LIGHT0, GL_AMBIENT, ambient4);
+	//glTranslatef(positionx, positiony, 1);
 	glScalef(zoom, zoom, zoom); //scale up down 
 
 
-	GLfloat temp_matrix[16];
+	/*GLfloat temp_matrix[16];
 	glRotatef(anglex, 1.0f, 0.0f, 0.0f);
 	glRotatef(angley, 0.0f, 1.0f, 0.0f);
+*/
 
-
-	glColor3ub(169, 200, 250);
+//	glColor3ub(169, 200, 250);
 	GLuint vertexbuffer;
 	glGenBuffers(1, &vertexbuffer);
 	glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
@@ -606,6 +634,7 @@ void display(void)
 	glVertexPointer(3, GL_FLOAT, 0, (void*)0);
 	glNormalPointer(GL_FLOAT, 0, (void*)(num_vertex * 3 * 4));
 
+
 	glDrawElements(GL_TRIANGLES, num_face * 3, GL_UNSIGNED_INT, (void*)0);
 
 
@@ -617,7 +646,7 @@ void display(void)
 
 	glDeleteBuffers(1, &vertexbuffer);
 	glDeleteBuffers(1, &indexbuffer);
-
+	glDisable(GL_LIGHT0);
 	glPopMatrix();
 
 	glFlush();
@@ -642,17 +671,24 @@ void keyboard(unsigned char key, int x, int y)
 {
 	switch (key)
 	{
-	case '1':
-	
+	case 'w':
+		positionx -= 0.1 * eyePosition[0];
+		positiony -= 0.1 * eyePosition[1];
+		positionz -= 0.1 * eyePosition[2];
+		break;
+	case 's':
+		positionx += 0.1 * eyePosition[0];
+		positiony += 0.1 * eyePosition[1];
+		positionz += 0.1 * eyePosition[2];
 		break;
 	case '2':
-	
+
 		break;
 	case '3':
-	
+
 		break;
 	case 'o':
-		positionz += 1;
+
 		break;
 
 	case 'b':
@@ -732,6 +768,33 @@ void mouseMove(int x, int y) {
 
 int main(int argc, char** argv)
 {
+
+#ifdef MUSIC_ON
+	mciOpen.lpstrElementName = "BGM.mp3"; // 파일 경로 입력
+	mciOpen.lpstrDeviceType = "mpegvideo";
+
+	mciSendCommand(NULL, MCI_OPEN, MCI_OPEN_ELEMENT | MCI_OPEN_TYPE,
+		(DWORD)(LPVOID)& mciOpen);
+
+	dwID = mciOpen.wDeviceID;
+
+	mciSendCommand(dwID, MCI_PLAY, MCI_DGV_PLAY_REPEAT, // play & repeat
+		(DWORD)(LPVOID)& m_mciPlayParms);
+
+
+	/* mciSendCommandW(dwID, MCI_PAUSE, MCI_NOTIFY,
+					(DWORD)(LPVOID)&m_mciPlayParms);     */// Pause
+
+	/* mciSendCommandW(dwID, MCI_RESUME, 0, NULL);       */// resume
+
+	/* mciSendCommandW(dwID, MCI_CLOSE, 0, NULL);        */// stop
+
+
+
+
+#endif
+
+
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
 	glutInitWindowSize(screenSize, screenSize);
@@ -739,10 +802,9 @@ int main(int argc, char** argv)
 	glutCreateWindow(argv[0]);
 	init();
 	stopwatch(1); // stopwatch ON
-	glutSetCursor(GLUT_CURSOR_NONE);
-	//get_vertex_face();
-	//calculate_normal_vertex();
-
+	glutSetCursor(GLUT_CURSOR_DESTROY);
+	get_vertex_face();
+	calculate_normal_vertex();
 	glutDisplayFunc(display);
 	glutIdleFunc(idle);
 	glutReshapeFunc(reshape);
