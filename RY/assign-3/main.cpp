@@ -49,9 +49,28 @@ GLfloat diffuse[] = { 1,1,1,1};
 GLfloat specular[] = { 1,1,1,1 };
 GLfloat ambient[] = { 1,1,1,1 };
 
+GLfloat diffuse3[] = { -1,-1,-1,1 };
+
+
+GLfloat Ipos2[4] = { 1,1,1,0 };
+GLfloat diffuse2[] = { 1,1,1,1 };
+GLfloat specular2[] = { 0,1,0,1 };
+GLfloat ambient2[] = { 0,1,0,1 };
+
+GLfloat Ipos4[4] = { 1,1,1,0 };
+GLfloat diffuse4[] = { 1,1,1,1 };
+GLfloat specular4[] = { 1,0.87,0,1 };
+GLfloat ambient4[] = { 1,0.87,0,1 };
+
+GLfloat Ipos8[4] = { 1,1,1,0 };
+GLfloat diffuse8[] = { 1,1,1,1 };
+GLfloat specular8[] = { 0,0,1,1 };
+GLfloat ambient8[] = { 0,0,1,1 };
+
 int time_ = 0;
 int check = 0;
 
+int secm;
 
 int mouse_prev_x = 0, mouse_prev_y = 0;
 int mouse_dx = 0, mouse_dy = 0;
@@ -86,9 +105,10 @@ struct SphereComponent {
 	float speedx = 0;
 	float speedy = 0;
 	float speedz = 0;
+	bool is_Collision = false;
 };
 
-struct SphereComponent SC[20];
+struct SphereComponent SC[100];
 
 typedef struct {
 	unsigned char x, y, z, w;
@@ -331,7 +351,7 @@ void idle()
 char timerBuffer[6 + 1];
 void secToHHMMSS(int secs, char* s, size_t size) {
 	int hour, min, sec;
-
+	secm = secs;
 	sec = secs % 60;
 	min = secs / 60 % 60;
 	//hour = secs / 3600;
@@ -447,9 +467,9 @@ void SettingPositionandDirection(int i)
 		SC[i].checky = 1;
 		SC[i].checkz = 1;
 
-		SC[i].speedx = float((rand() % 10)) / 100;
-		SC[i].speedy = float((rand() % 10)) / 100;
-		SC[i].speedz = float((rand() % 10)) / 100;
+		SC[i].speedx = float((rand() % 10)) / 200;
+		SC[i].speedy = float((rand() % 10)) / 200;
+		SC[i].speedz = float((rand() % 10)) / 200;
 
 	}
 }
@@ -459,23 +479,51 @@ void Make_Sphere(int i)
 	glPushMatrix();
 	SettingPositionandDirection(i);
 	convertDirection(i);
-	glTranslatef(SC[i].startPositionx + SC[i].directionx, SC[i].startPositiony + SC[i].directiony, SC[i].startPositionz + SC[i].directionz);
-	glutSolidSphere(0.15f, 100, 100);
 
+	if (i < 40) {
+		glEnable(GL_LIGHT1);
+
+		glLightfv(GL_LIGHT1, GL_POSITION, Ipos2);
+		glLightfv(GL_LIGHT1, GL_DIFFUSE, diffuse2);
+		glLightfv(GL_LIGHT1, GL_SPECULAR, specular2);
+		glLightfv(GL_LIGHT1, GL_AMBIENT, ambient2);
+	}
+	else {
+		glEnable(GL_LIGHT5);
+
+		glLightfv(GL_LIGHT5, GL_POSITION, Ipos8);
+		glLightfv(GL_LIGHT5, GL_DIFFUSE, diffuse8);
+		glLightfv(GL_LIGHT5, GL_SPECULAR, specular8);
+		glLightfv(GL_LIGHT5, GL_AMBIENT, ambient8);
+	}
+	glTranslatef(SC[i].startPositionx + SC[i].directionx, SC[i].startPositiony + SC[i].directiony, SC[i].startPositionz + SC[i].directionz);
+	glutSolidSphere(0.2f, 100, 100);
+
+	if (i < 40) {
+		glDisable(GL_LIGHT1);
+	}
+	else
+		glDisable(GL_LIGHT5);
 	glPopMatrix();
 
 }
 
+void check_Collision(int i)
+{
+	float tempx = SC[i].startPositionx + SC[i].directionx - positionx;
+	float tempy = SC[i].startPositiony + SC[i].directiony - positiony;
+	float tempz = SC[i].startPositionz + SC[i].directionz - positionz;
+	if (sqrt(tempx * tempx + tempy * tempy + tempz * tempz) < 0.32) {
+		SC[i].is_Collision = true;
+
+		exit(0);
+	}
+}
 void display(void)
 {
 	// update dynamic cubemap per frame
 	glEnable(GL_LIGHTING);
-	glEnable(GL_LIGHT0);
-
-	glLightfv(GL_LIGHT0, GL_POSITION, Ipos);
-	glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse);
-	glLightfv(GL_LIGHT0, GL_SPECULAR, specular);
-	glLightfv(GL_LIGHT0, GL_AMBIENT, ambient);
+	
 	
 
 	// render something here...
@@ -487,10 +535,29 @@ void display(void)
 		0.0f, 1.0f, 0.0f);
 	glEnable(GL_TEXTURE_2D);
 	glPushMatrix();
+
+	glEnable(GL_LIGHT3);
+
+	glLightfv(GL_LIGHT3, GL_POSITION, Ipos);
+	glLightfv(GL_LIGHT3, GL_DIFFUSE, diffuse);
+	glLightfv(GL_LIGHT3, GL_SPECULAR, specular);
+	glLightfv(GL_LIGHT3, GL_AMBIENT, ambient);
+
+	glEnable(GL_LIGHT4);
+
+	glLightfv(GL_LIGHT4, GL_POSITION, Ipos);
+	glLightfv(GL_LIGHT4, GL_DIFFUSE, diffuse3);
+	glLightfv(GL_LIGHT4, GL_SPECULAR, specular);
+	glLightfv(GL_LIGHT4, GL_AMBIENT, ambient);
+
 	glTranslatef(0, 0, 0);
 	glScalef(zoom, zoom, zoom);
 	
 	CreateCube(10.0);
+
+	glDisable(GL_LIGHT3);
+	glDisable(GL_LIGHT4);
+
 	glPopMatrix();
 
 	glPushMatrix();
@@ -524,16 +591,33 @@ void display(void)
 	//glTranslatef(positionx, positiony, 7);
 	//glPopMatrix();
 
-	for (int i = 0; i < 20; i++)
+	for (int i = 0; i < 40; i++) {
 		Make_Sphere(i);
+		check_Collision(i);
+	}
 
-
+	for (int i = 40; i < 40 + secm / 5; i++) {
+		if (i < 100) {
+			Make_Sphere(i);
+			check_Collision(i);
+		}
+	}
 	glLoadIdentity();
 	gluLookAt(0, 0.0, 3.0,
 		0.0, 0.0, 0.0,
 		0.0f, 1.0f, 0.0f);
 	glPushMatrix();
 	text(-0.8, -0.8); // text added
+	glPopMatrix();
+
+	glPushMatrix();
+
+	glEnable(GL_LIGHT0);
+
+	glLightfv(GL_LIGHT0, GL_POSITION, Ipos4);
+	glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse4);
+	glLightfv(GL_LIGHT0, GL_SPECULAR, specular4);
+	glLightfv(GL_LIGHT0, GL_AMBIENT, ambient4);
 	//glTranslatef(positionx, positiony, 1);
 	glScalef(zoom, zoom, zoom); //scale up down 
 
@@ -578,7 +662,7 @@ void display(void)
 
 	glDeleteBuffers(1, &vertexbuffer);
 	glDeleteBuffers(1, &indexbuffer);
-
+	glDisable(GL_LIGHT0);
 	glPopMatrix();
 
 	glFlush();

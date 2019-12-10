@@ -105,6 +105,7 @@ struct SphereComponent {
 	float speedx = 0;
 	float speedy = 0;
 	float speedz = 0;
+	bool is_Collision = false;
 };
 
 struct SphereComponent SC[100];
@@ -496,7 +497,7 @@ void Make_Sphere(int i)
 		glLightfv(GL_LIGHT5, GL_AMBIENT, ambient8);
 	}
 	glTranslatef(SC[i].startPositionx + SC[i].directionx, SC[i].startPositiony + SC[i].directiony, SC[i].startPositionz + SC[i].directionz);
-	glutSolidSphere(0.2f, 100, 100);
+	glutSolidSphere(2f, 100, 100);
 
 	if (i < 40) {
 		glDisable(GL_LIGHT1);
@@ -507,6 +508,16 @@ void Make_Sphere(int i)
 
 }
 
+void check_Collision(int i)
+{
+	float tempx = SC[i].startPositionx + SC[i].directionx - positionx;
+	float tempy = SC[i].startPositiony + SC[i].directiony - positiony;
+	float tempz = SC[i].startPositionz + SC[i].directionz - positionz;
+	if (sqrt(tempx * tempx + tempy * tempy + tempz * tempz) < 0.) {
+		SC[i].is_Collision = true;
+		exit(0);
+	}
+}
 void display(void)
 {
 	// update dynamic cubemap per frame
@@ -579,13 +590,17 @@ void display(void)
 	//glTranslatef(positionx, positiony, 7);
 	//glPopMatrix();
 
-	for (int i = 0; i < 40; i++)
+	for (int i = 0; i < 40; i++) {
 		Make_Sphere(i);
+		check_Collision(i);
+	}
 
-	for (int i = 40; i < 40 + secm / 5; i++)
-		if ( i < 100 )
+	for (int i = 40; i < 40 + secm / 5; i++) {
+		if (i < 100) {
 			Make_Sphere(i);
-
+			check_Collision(i);
+		}
+	}
 	glLoadIdentity();
 	gluLookAt(0, 0.0, 3.0,
 		0.0, 0.0, 0.0,
