@@ -23,10 +23,12 @@
 #include <GL/glew.h>
 #include <time.h>
 #include <fstream>
-#ifdef MUSIC_ON
-#include <dshow.h>
-#pragma comment (lib, "strmiids.lib")
-#endif
+#define NUM_OF_GREEN 100
+#define NUM_OF_MAX 1000
+#define CUBESIZE 40.0
+#define SPEED 0.2
+#define BALLSIZE 2.0
+#define RABBITSIZE 0.15
 using namespace std;
 //
 // Definitions
@@ -37,12 +39,31 @@ float scale = 1;
 
 GLfloat Ipos[4] = { 1,1,1,0 };
 GLfloat diffuse[] = { 1,1,1,1 };
-GLfloat specular[] = { 1,1,1,0 };
+GLfloat specular[] = { 1,1,1,1 };
 GLfloat ambient[] = { 1,1,1,1 };
+
+GLfloat diffuse3[] = { -1,-1,-1,1 };
+
+
+GLfloat Ipos2[4] = { 1,1,1,0 };
+GLfloat diffuse2[] = { 1,1,1,1 };
+GLfloat specular2[] = { 0,1,0,1 };
+GLfloat ambient2[] = { 0,1,0,1 };
+
+GLfloat Ipos4[4] = { 1,1,1,0 };
+GLfloat diffuse4[] = { 1,1,1,1 };
+GLfloat specular4[] = { 1,0.87,0,1 };
+GLfloat ambient4[] = { 1,0.87,0,1 };
+
+GLfloat Ipos8[4] = { 1,1,1,0 };
+GLfloat diffuse8[] = { 1,1,1,1 };
+GLfloat specular8[] = { 0,0,1,1 };
+GLfloat ambient8[] = { 0,0,1,1 };
 
 int time_ = 0;
 int check = 0;
 
+int secm;
 
 int mouse_prev_x = 0, mouse_prev_y = 0;
 int mouse_dx = 0, mouse_dy = 0;
@@ -52,7 +73,7 @@ bool middle_button_pressed = false;
 
 float anglex = 0, angley = 0, anglez = 0;
 float zoom = 1.35;
-float positionx = 0, positiony = 0, positionz = 5;
+float positionx = 0, positiony = 0, positionz = 0;
 
 GLfloat width, height;
 
@@ -62,10 +83,11 @@ float* normal = NULL;
 float* vertexnormal = NULL;
 int num_vertex, num_face, zero;
 
-int score;
-
+int score = 0;
+bool is_Collision = false;
+int getCount = 0;
 struct SphereComponent {
-	float startPositionx = 2;
+	float startPositionx = 45;
 	float startPositiony = 0;
 	float startPositionz = 0;
 	float directionx = 0;
@@ -77,9 +99,10 @@ struct SphereComponent {
 	float speedx = 0;
 	float speedy = 0;
 	float speedz = 0;
+	bool is_eaten = false;
 };
 
-struct SphereComponent SC[20];
+struct SphereComponent SC[NUM_OF_MAX];
 
 typedef struct {
 	unsigned char x, y, z, w;
@@ -246,7 +269,6 @@ void init(void)
 
 	glewInit();
 
-	GLfloat diffuse[4] = { 1.0, 1.0, 1.0, 1.0 };
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glClearColor(1.0, 1.0, 1.0, 1.0);
@@ -323,7 +345,7 @@ void idle()
 char timerBuffer[6 + 1];
 void secToHHMMSS(int secs, char* s, size_t size) {
 	int hour, min, sec;
-
+	secm = secs;
 	sec = secs % 60;
 	min = secs / 60 % 60;
 	//hour = secs / 3600;
@@ -353,29 +375,30 @@ int stopwatch(int onOff) {
 // text added
 void text(double x, double y)
 {
-	char text[32];
-	char text2[32];
+	const int num_of_text = 3;
+	char text[num_of_text][32];
 	//sprintf(text, ": %.1f", zoom);
 	int sec = stopwatch(0);
-	score = 100 * sec;
-	sprintf(text, "TIME: %s\n", timerBuffer);
-	sprintf(text2, "Score: %d\n", score);
+	score += 1;
+	sprintf(text[0], "TIME: %s\n", timerBuffer);
+	sprintf(text[1], "Score: %d\n", score);
+	sprintf(text[2], "Blue Ball: %d\n", getCount);
 	glColor3f(0.0, 0.0, 0.0);
-	glRasterPos2f(x, y);
-	for (int i = 0; text[i] != '\0'; i++)
-		glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, text[i]);
-	glColor3f(0.0, 0.0, 0.0);
-	glRasterPos2f(x, y - 0.05);
-	for (int i = 0; text2[i] != '\0'; i++)
-		glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, text2[i]);
+	for (int i = 0; i < num_of_text; i++) {
+		glRasterPos2f(x, y - 0.05 * i);
+		for (int j = 0; text[i][j] != '\0'; j++)
+		{
+			glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, text[i][j]);
+		}
+	}
 }
 
 
 void convertDirection(int i)
 {
-	if (SC[i].startPositionx + SC[i].directionx < -10)
+	if (SC[i].startPositionx + SC[i].directionx < -CUBESIZE)
 		SC[i].checkx = 1;
-	else if (SC[i].startPositionx + SC[i].directionx > 10)
+	else if (SC[i].startPositionx + SC[i].directionx > CUBESIZE)
 		SC[i].checkx = 0;
 
 	if (SC[i].checkx == 1)
@@ -383,19 +406,19 @@ void convertDirection(int i)
 	else if (SC[i].checkx == 0)
 		SC[i].directionx -= SC[i].speedx;
 
-	if (SC[i].startPositiony + SC[i].directiony < -10)
+	if (SC[i].startPositiony + SC[i].directiony < -CUBESIZE)
 		SC[i].checky = 1;
-	else if (SC[i].startPositiony + SC[i].directiony > 10)
+	else if (SC[i].startPositiony + SC[i].directiony > CUBESIZE)
 		SC[i].checky = 0;
-	\
-		if (SC[i].checky == 1)
-			SC[i].directiony += SC[i].speedy;
-		else if (SC[i].checky == 0)
-			SC[i].directiony -= SC[i].speedy;
 
-	if (SC[i].startPositionz + SC[i].directionz < -10)
+	if (SC[i].checky == 1)
+		SC[i].directiony += SC[i].speedy;
+	else if (SC[i].checky == 0)
+		SC[i].directiony -= SC[i].speedy;
+
+	if (SC[i].startPositionz + SC[i].directionz < -CUBESIZE)
 		SC[i].checkz = 1;
-	else if (SC[i].startPositionz + SC[i].directionz > 10)
+	else if (SC[i].startPositionz + SC[i].directionz > CUBESIZE)
 		SC[i].checkz = 0;
 
 	if (SC[i].checkz == 1)
@@ -407,26 +430,26 @@ void convertDirection(int i)
 
 void SettingPositionandDirection(int i)
 {
-	if (SC[i].startPositionx > 1.5)
+	if (SC[i].startPositionx > 43)
 	{
 		if (i % 3 == 0) {
 			//srand(time(NULL));
-			SC[i].startPositionx = 1;
-			SC[i].startPositiony = float((rand() % 100)) / 100;
-			SC[i].startPositionz = float((rand() % 100)) / 100;
+			SC[i].startPositionx = CUBESIZE;
+			SC[i].startPositiony = float(rand() % int(CUBESIZE));
+			SC[i].startPositionz = float(rand() % int(CUBESIZE));
 			printf("%f %f %f\n", SC[i].startPositionx, SC[i].startPositiony, SC[i].startPositionz);
 		}
 		else if (i % 3 == 1) {
 			//srand(time(NULL));
-			SC[i].startPositionx = float((rand() % 100)) / 100;
-			SC[i].startPositiony = -1;
-			SC[i].startPositionz = float((rand() % 100)) / 100;
+			SC[i].startPositionx = float(rand() % int(CUBESIZE));
+			SC[i].startPositiony = -CUBESIZE;
+			SC[i].startPositionz = float(rand() % int(CUBESIZE));
 		}
 		else if (i % 3 == 2) {
 			//srand(time(NULL));
-			SC[i].startPositionx = -1;
-			SC[i].startPositiony = float((rand() % 100)) / 100;
-			SC[i].startPositionz = float((rand() % 100)) / 100;
+			SC[i].startPositionx = -CUBESIZE;
+			SC[i].startPositiony = float(rand() % int(CUBESIZE));
+			SC[i].startPositionz = float(rand() % int(CUBESIZE));
 		}
 
 		//srand(time(NULL));
@@ -451,41 +474,92 @@ void Make_Sphere(int i)
 	glPushMatrix();
 	SettingPositionandDirection(i);
 	convertDirection(i);
-	glTranslatef(SC[i].startPositionx + SC[i].directionx, SC[i].startPositiony + SC[i].directiony, SC[i].startPositionz + SC[i].directionz);
-	glutSolidSphere(0.15f, 100, 100);
 
+	if (i < NUM_OF_GREEN) {
+		glEnable(GL_LIGHT1);
+
+		glLightfv(GL_LIGHT1, GL_POSITION, Ipos2);
+		glLightfv(GL_LIGHT1, GL_DIFFUSE, diffuse2);
+		glLightfv(GL_LIGHT1, GL_SPECULAR, specular2);
+		glLightfv(GL_LIGHT1, GL_AMBIENT, ambient2);
+	}
+	else {
+		glEnable(GL_LIGHT5);
+
+		glLightfv(GL_LIGHT5, GL_POSITION, Ipos8);
+		glLightfv(GL_LIGHT5, GL_DIFFUSE, diffuse8);
+		glLightfv(GL_LIGHT5, GL_SPECULAR, specular8);
+		glLightfv(GL_LIGHT5, GL_AMBIENT, ambient8);
+	}
+	glTranslatef(SC[i].startPositionx + SC[i].directionx, SC[i].startPositiony + SC[i].directiony, SC[i].startPositionz + SC[i].directionz);
+	glutSolidSphere(BALLSIZE, 100, 100);
+
+	if (i < NUM_OF_GREEN) {
+		glDisable(GL_LIGHT1);
+	}
+	else
+		glDisable(GL_LIGHT5);
 	glPopMatrix();
 
 }
 
+void check_Collision(int i)
+{
+	float tempx = SC[i].startPositionx + SC[i].directionx - positionx;
+	float tempy = SC[i].startPositiony + SC[i].directiony - positiony;
+	float tempz = SC[i].startPositionz + SC[i].directionz - positionz;
+	if (sqrt(tempx * tempx + tempy * tempy + tempz * tempz) < RABBITSIZE + BALLSIZE && i < NUM_OF_GREEN) {
+		char msg[100];
+		wsprintf(msg, TEXT("Your score is %d."), score); //message
+		MessageBox(NULL, msg, TEXT("Game Over"), NULL); //Box name
+		exit(1);
+	}
+	else if (sqrt(tempx * tempx + tempy * tempy + tempz * tempz) < RABBITSIZE + BALLSIZE && i >= NUM_OF_GREEN)
+	{
+		score += 1000;
+		SC[i].startPositionx = 45;
+		getCount++;
+	}
+}
 void display(void)
 {
 	// update dynamic cubemap per frame
 	glEnable(GL_LIGHTING);
-	glEnable(GL_LIGHT0);
 
-	glLightfv(GL_LIGHT0, GL_POSITION, Ipos);
-	//glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse);
-	glLightfv(GL_LIGHT0, GL_SPECULAR, specular);
-	glLightfv(GL_LIGHT0, GL_AMBIENT, ambient);
 
 
 	// render something here...
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
-	gluLookAt(eyePosition[0], eyePosition[1], eyePosition[2],
-		0.0, 0.0, 0.0,
+	gluLookAt(eyePosition[0] + positionx, eyePosition[1] + positiony, eyePosition[2] + positionz,
+		positionx, positiony, positionz,
 		0.0f, 1.0f, 0.0f);
 	glEnable(GL_TEXTURE_2D);
 	glPushMatrix();
+
+	glEnable(GL_LIGHT3);
+
+	glLightfv(GL_LIGHT3, GL_POSITION, Ipos);
+	glLightfv(GL_LIGHT3, GL_DIFFUSE, diffuse);
+	glLightfv(GL_LIGHT3, GL_SPECULAR, specular);
+	glLightfv(GL_LIGHT3, GL_AMBIENT, ambient);
+
+	glEnable(GL_LIGHT4);
+
+	glLightfv(GL_LIGHT4, GL_POSITION, Ipos);
+	glLightfv(GL_LIGHT4, GL_DIFFUSE, diffuse3);
+	glLightfv(GL_LIGHT4, GL_SPECULAR, specular);
+	glLightfv(GL_LIGHT4, GL_AMBIENT, ambient);
+
 	glTranslatef(0, 0, 0);
 	glScalef(zoom, zoom, zoom);
-	glRotatef(anglex, 1.0f, 0.0f, 0.0f);
-	glRotatef(angley, 0.0f, 1.0f, 0.0f);
 
-	CreateCube(10.0);
+	CreateCube(CUBESIZE);
+
+	glDisable(GL_LIGHT3);
+	glDisable(GL_LIGHT4);
+
 	glPopMatrix();
 
 	glPushMatrix();
@@ -519,9 +593,17 @@ void display(void)
 	//glTranslatef(positionx, positiony, 7);
 	//glPopMatrix();
 
-	for (int i = 0; i < 20; i++)
+	for (int i = 0; i < NUM_OF_GREEN; i++) {
 		Make_Sphere(i);
+		check_Collision(i);
+	}
 
+	for (int i = NUM_OF_GREEN; i < NUM_OF_GREEN + secm / 5; i++) {
+		if (i < NUM_OF_MAX) {
+			Make_Sphere(i);
+			check_Collision(i);
+		}
+	}
 
 	glLoadIdentity();
 	gluLookAt(0, 0.0, 3.0,
@@ -529,16 +611,26 @@ void display(void)
 		0.0f, 1.0f, 0.0f);
 	glPushMatrix();
 	text(-0.8, -0.8); // text added
-	glTranslatef(positionx, positiony, 1);
+	glPopMatrix();
+
+	glPushMatrix();
+
+	glEnable(GL_LIGHT0);
+
+	glLightfv(GL_LIGHT0, GL_POSITION, Ipos4);
+	glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse4);
+	glLightfv(GL_LIGHT0, GL_SPECULAR, specular4);
+	glLightfv(GL_LIGHT0, GL_AMBIENT, ambient4);
+	//glTranslatef(positionx, positiony, 1);
 	glScalef(zoom, zoom, zoom); //scale up down 
+	glTranslatef(0, -0.1, 0);
 
-
-	GLfloat temp_matrix[16];
+	/*GLfloat temp_matrix[16];
 	glRotatef(anglex, 1.0f, 0.0f, 0.0f);
 	glRotatef(angley, 0.0f, 1.0f, 0.0f);
+*/
 
-
-	glColor3ub(169, 200, 250);
+//	glColor3ub(169, 200, 250);
 	GLuint vertexbuffer;
 	glGenBuffers(1, &vertexbuffer);
 	glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
@@ -561,6 +653,7 @@ void display(void)
 	glVertexPointer(3, GL_FLOAT, 0, (void*)0);
 	glNormalPointer(GL_FLOAT, 0, (void*)(num_vertex * 3 * 4));
 
+
 	glDrawElements(GL_TRIANGLES, num_face * 3, GL_UNSIGNED_INT, (void*)0);
 
 
@@ -572,7 +665,7 @@ void display(void)
 
 	glDeleteBuffers(1, &vertexbuffer);
 	glDeleteBuffers(1, &indexbuffer);
-
+	glDisable(GL_LIGHT0);
 	glPopMatrix();
 
 	glFlush();
@@ -593,12 +686,51 @@ void reshape(int w, int h)
 	height = h;
 }
 
+bool boundary(float b)
+{
+	if (b > CUBESIZE - 5 || b < -CUBESIZE + 5)
+		return false;
+	return true;
+}
+
+void bangbang(void)
+{
+	if (!boundary(positionx) && positionx > 0)
+		positionx = CUBESIZE - 5.1;
+	else if (!boundary(positionx) && positionx < 0)
+		positionx = -CUBESIZE + 5.1;
+	if (!boundary(positiony) && positiony > 0)
+		positiony = CUBESIZE - 5.1;
+	else if (!boundary(positiony) && positiony < 0)
+		positiony = -CUBESIZE + 5.1;
+	if (!boundary(positionz) && positionz > 0)
+		positionz = CUBESIZE - 5.1;
+	else if (!boundary(positionz) && positionz < 0)
+		positionz = -CUBESIZE + 5.1;
+}
+
 void keyboard(unsigned char key, int x, int y)
 {
+
 	switch (key)
 	{
-	case '1':
-
+	case 'w':
+		if (boundary(positionx) && boundary(positiony) && boundary(positionz)) {
+			positionx -= SPEED * eyePosition[0];
+			positiony -= SPEED * eyePosition[1];
+			positionz -= SPEED * eyePosition[2];
+		}
+		else
+			bangbang();
+		break;
+	case 's':
+		if (boundary(positionx) && boundary(positiony) && boundary(positionz)) {
+			positionx += SPEED * eyePosition[0];
+			positiony += SPEED * eyePosition[1];
+			positionz += SPEED * eyePosition[2];
+		}
+		else
+			bangbang();
 		break;
 	case '2':
 
@@ -607,7 +739,7 @@ void keyboard(unsigned char key, int x, int y)
 
 		break;
 	case 'o':
-		positionz += 1;
+
 		break;
 
 	case 'b':
@@ -687,41 +819,6 @@ void mouseMove(int x, int y) {
 
 int main(int argc, char** argv)
 {
-
-#ifdef MUSIC_ON
-	IGraphBuilder* pGraph = NULL;
-	IMediaControl* pControl = NULL;
-	IMediaEvent* pEvent = NULL; // Initialize the COM library.
-	HRESULT hr = CoInitialize(NULL);
-	if (FAILED(hr)) {
-		printf("ERROR - Could not initialize COM library");
-		return -1;
-	} // Create the filter graph manager and query for interfaces.
-	hr = CoCreateInstance(CLSID_FilterGraph, NULL, CLSCTX_INPROC_SERVER, IID_IGraphBuilder, (void**)& pGraph);
-	if (FAILED(hr)) {
-		printf("ERROR - Could not create the Filter Graph Manager.");
-		return -1;
-	}
-	hr = pGraph->QueryInterface(IID_IMediaControl, (void**)& pControl);
-	hr = pGraph->QueryInterface(IID_IMediaEvent, (void**)& pEvent);
-	// Build the graph. IMPORTANT: Change this string to a file on your system.
-	hr = pGraph->RenderFile(L"../BGM.mp3", NULL);
-	if (SUCCEEDED(hr)) {
-		// Run the graph.
-		hr = pControl->Run();
-		if (SUCCEEDED(hr)) {
-			// Wait for completion.
-			long evCode;
-			pEvent->WaitForCompletion(INFINITE, &evCode);// Note: Do not use INFINITE in a real application, because it // can block indefinitely.
-		}
-	}
-	pControl->Release();
-	pEvent->Release();
-	pGraph->Release();
-	CoUninitialize();
-#endif
-
-
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
 	glutInitWindowSize(screenSize, screenSize);
