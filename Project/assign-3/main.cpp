@@ -23,9 +23,11 @@
 #include <GL/glew.h>
 #include <time.h>
 #include <fstream>
-//RY
-#include<MMSystem.h>
-#pragma comment(lib, "winmm.lib")
+#include<MMSystem.h> 
+#include <dshow.h>
+
+#pragma comment (lib, "strmiids.lib")
+#pragma comment(lib, "Winmm.lib") 
 
 #define NUM_OF_GREEN 100
 #define NUM_OF_MAX 1000
@@ -91,6 +93,10 @@ int num_vertex, num_face, zero;
 int score = 0;
 bool is_Collision = false;
 int getCount = 0;
+IGraphBuilder* pGraph = NULL;
+IMediaControl* pControl = NULL;
+IMediaEvent* pEvent = NULL;
+HRESULT hr = CoInitialize(NULL);
 struct SphereComponent {
 	float startPositionx = 45;
 	float startPositiony = 0;
@@ -140,6 +146,31 @@ GLuint fb, depth_rb;
 //
 // Functions
 //
+void playBGM()
+{
+	// Initialize the COM library.
+
+	if (FAILED(hr)) {
+		printf("ERROR - Could not initialize COM library");
+		//	exit(-1);
+	} // Create the filter graph manager and query for interfaces.
+	hr = CoCreateInstance(CLSID_FilterGraph, NULL, CLSCTX_INPROC_SERVER, IID_IGraphBuilder, (void**)& pGraph);
+	if (FAILED(hr)) {
+		printf("ERROR - Could not create the Filter Graph Manager.");
+		//	exit(-1);
+	}
+	hr = pGraph->QueryInterface(IID_IMediaControl, (void**)& pControl);
+	hr = pGraph->QueryInterface(IID_IMediaEvent, (void**)& pEvent);
+	// Build the graph.IMPORTANT: Change this string to a file on your system.
+
+	hr = pGraph->RenderFile(L"../NEWBGM.mp3", NULL);
+
+	if (SUCCEEDED(hr)) {
+		// Run the graph.
+		hr = pControl->Run();
+	}
+}
+
 void get_vertex_face(void)
 {
 	FILE* MeshFile = NULL;
@@ -516,6 +547,8 @@ void check_Collision(int i)
 	float tempz = SC[i].startPositionz + SC[i].directionz - positionz;
 	if (sqrt(tempx * tempx + tempy * tempy + tempz * tempz) < RABBITSIZE + BALLSIZE && i < NUM_OF_GREEN) {
 		char msg[100];
+		hr = pControl->Stop();
+		PlaySound(TEXT("../ENDING.wav"), NULL, SND_ASYNC | SND_FILENAME);
 		wsprintf(msg, TEXT("Your score is %d."), score); //message
 		MessageBox(NULL, msg, TEXT("Game Over"), NULL); //Box name
 		exit(1);
@@ -827,6 +860,7 @@ void mouseMove(int x, int y) {
 
 int main(int argc, char** argv)
 {
+	playBGM();
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
 	glutInitWindowSize(screenSize, screenSize);
