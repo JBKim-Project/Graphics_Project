@@ -23,26 +23,34 @@
 #include <GL/glew.h>
 #include <time.h>
 #include <fstream>
-#include<MMSystem.h> 
+#include <MMSystem.h> 
 #include <dshow.h>
 
 #pragma comment (lib, "strmiids.lib")
 #pragma comment(lib, "Winmm.lib") 
 
 #define NUM_OF_GREEN 100
-#define NUM_OF_MAX 1000
+#define NUM_OF_MAX 120
 #define CUBESIZE 40.0
-#define SPEED 0.2
-#define BALLSIZE 2.0
+#define RABBIT_SPEED 0.2
+#define BALL_SPEED 45
+#define BALLSIZE 0.5
 #define RABBITSIZE 0.15
-using namespace std;
+#define BONUS_POINT 1000
 
+using namespace std;
 //
 // Definitions
 //
 float eyePosition[3] = { 0,0,1 };
 float up[3] = { 0,1,0 };
 float scale = 1;
+int timetemp = 0;
+
+IGraphBuilder* pGraph = NULL;
+IMediaControl* pControl = NULL;
+IMediaEvent* pEvent = NULL;
+HRESULT hr = CoInitialize(NULL);
 
 GLfloat Ipos[4] = { 1,1,1,0 };
 GLfloat diffuse[] = { 1,1,1,1 };
@@ -54,8 +62,8 @@ GLfloat diffuse3[] = { -1,-1,-1,1 };
 
 GLfloat Ipos2[4] = { 1,1,1,0 };
 GLfloat diffuse2[] = { 1,1,1,1 };
-GLfloat specular2[] = { 0,1,0,1 };
-GLfloat ambient2[] = { 0,1,0,1 };
+GLfloat specular2[] = { 1,1,1,1 };
+GLfloat ambient2[] = { 1,1,1,1 };
 
 GLfloat Ipos4[4] = { 1,1,1,0 };
 GLfloat diffuse4[] = { 1,1,1,1 };
@@ -67,10 +75,16 @@ GLfloat diffuse8[] = { 1,1,1,1 };
 GLfloat specular8[] = { 0,0,1,1 };
 GLfloat ambient8[] = { 0,0,1,1 };
 
+GLfloat Ipos6[4] = { 1,1,1,0 };
+GLfloat diffuse6[] = { 1,1,1,1 };
+GLfloat specular6[] = { 1,0,0,1 };
+GLfloat ambient6[] = { 1,0,0,1 };
+
+
 int time_ = 0;
 int check = 0;
 
-int secm;
+int ms, sec, min;
 
 int mouse_prev_x = 0, mouse_prev_y = 0;
 int mouse_dx = 0, mouse_dy = 0;
@@ -78,10 +92,10 @@ int mouse_dx = 0, mouse_dy = 0;
 bool left_button_pressed = false;
 bool middle_button_pressed = false;
 
-float anglex = 0, angley = 0, anglez = 0;
+float anglex = -118.0, angley = 223.0, anglez = 0;
 float zoom = 1.35;
 float positionx = 0, positiony = 0, positionz = 0;
-
+float btime = 0;
 GLfloat width, height;
 
 float* vertex = NULL;
@@ -91,12 +105,9 @@ float* vertexnormal = NULL;
 int num_vertex, num_face, zero;
 
 int score = 0;
-bool is_Collision = false;
-int getCount = 0;
-IGraphBuilder* pGraph = NULL;
-IMediaControl* pControl = NULL;
-IMediaEvent* pEvent = NULL;
-HRESULT hr = CoInitialize(NULL);
+int sec__ = 0;
+bool bonus = false;
+bool life_extension = false;
 struct SphereComponent {
 	float startPositionx = 45;
 	float startPositiony = 0;
@@ -120,7 +131,6 @@ typedef struct {
 } uchar4;
 typedef unsigned char uchar;
 
-
 // BMP loader
 void LoadBMPFile(uchar4** dst, int* width, int* height, const char* name);
 
@@ -140,7 +150,7 @@ static GLubyte image5[4][4][4];
 static GLubyte image6[4][4][4];
 
 // texture object handles, FBO handles
-GLuint cube_tex, color_tex;
+GLuint cube_tex, color_tex, color_tex2;
 GLuint fb, depth_rb;
 
 //
@@ -171,6 +181,14 @@ void playBGM()
 	}
 }
 
+void endGame()
+{
+	char msg[100];
+	wsprintf(msg, TEXT("Your score is %d."), score); //message
+	MessageBox(NULL, msg, TEXT("Game Over"), NULL); //Box name
+	exit(1);
+}
+
 void get_vertex_face(void)
 {
 	FILE* MeshFile = NULL;
@@ -190,7 +208,7 @@ void get_vertex_face(void)
 		return;
 	}
 	fscanf(MeshFile, "%d %d %d", &num_vertex, &num_face, &zero);
-	printf("%d, %d\n", num_vertex, num_face);
+
 
 	vertex = new float[num_vertex * 3];
 	face = new int[num_face * 3];
@@ -321,9 +339,9 @@ void init(void)
 	// 
 	int width, height;
 	uchar4* dst;
-	//LoadBMPFile(&dst, &width, &height, "../CLOUD2.bmp"); // this is how to load image
-	//LoadBMPFile(&dst, &width, &height, "../Yob.jpg"); // this is how to load image
-	LoadBMPFile(&dst, &width, &height, "../brick.bmp"); // this is how to load image
+
+
+	LoadBMPFile(&dst, &width, &height, "../wall.bmp"); // this is how to load image
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 	glGenTextures(1, &color_tex);
 	glBindTexture(GL_TEXTURE_2D, color_tex);
@@ -333,14 +351,6 @@ void init(void)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, dst);
 
-#define STATIC_CUBEMAP
-	//#define DYNAMIC_CUBEMAP //STATIC_CUBEMAP 
-
-		//
-		// creating cube map texture (either static or dynamic)
-		//
-
-#ifdef STATIC_CUBEMAP
 	// create static cubemap from synthetic data
 	glGenTextures(1, &cube_tex);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, cube_tex);
@@ -363,13 +373,63 @@ void init(void)
 	glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_REFLECTION_MAP);
 	glTexGeni(GL_R, GL_TEXTURE_GEN_MODE, GL_REFLECTION_MAP);
 
-	// ToDo...
+}
+
+void before_init(void)
+{
+	glewInit();
+
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glClearColor(1.0, 1.0, 1.0, 1.0);
+	glEnable(GL_DEPTH_TEST);
+	glShadeModel(GL_SMOOTH);
+
+	// make synthetic cubemap data
+	makeSyntheticImages();
+
+
+	//
+	// Creating a 2D texture from image
+	// 
+	int width, height;
+	uchar4* dst;
+	LoadBMPFile(&dst, &width, &height, "../Main.bmp"); // this is how to load image
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 2);
+	glGenTextures(2, &color_tex);
+	glBindTexture(GL_TEXTURE_2D, color_tex);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, dst);
+
+#define STATIC_MAP
+
+
+#ifdef STATIC_MAP
+	// create static cubemap from synthetic data
+	glGenTextures(2, &cube_tex);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, cube_tex);
+
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+
+	glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, GL_RGBA, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, image1);
+	glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, 0, GL_RGBA, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, image2);
+	glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Y, 0, GL_RGBA, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, image3);
+	glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, 0, GL_RGBA, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, image4);
+	glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Z, 0, GL_RGBA, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, image5);
+	glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, 0, GL_RGBA, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, image6);
+
+	glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_REFLECTION_MAP);
+	glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_REFLECTION_MAP);
+	glTexGeni(GL_R, GL_TEXTURE_GEN_MODE, GL_REFLECTION_MAP);
 
 #endif
-
-
-// generate cubemap on-the-fly
-
 }
 
 void idle()
@@ -381,8 +441,8 @@ void idle()
 
 char timerBuffer[6 + 1];
 void secToHHMMSS(int secs, char* s, size_t size) {
-	int hour, min, sec;
-	secm = secs;
+	int hour, sec_;
+	ms = secs;
 	sec = secs % 60;
 	min = secs / 60 % 60;
 	//hour = secs / 3600;
@@ -408,26 +468,90 @@ int stopwatch(int onOff) {
 	}
 
 }
+int lifeTime;
+float check_time = 0;
+bool time_check = true;
+
 
 // text added
 void text(double x, double y)
 {
 	const int num_of_text = 3;
 	char text[num_of_text][32];
-	//sprintf(text, ": %.1f", zoom);
-	int sec = stopwatch(0);
+	char text_eff[32];
+
+	stopwatch(0);
 	score += 1;
-	sprintf(text[0], "TIME: %s\n", timerBuffer);
-	sprintf(text[1], "Score: %d\n", score);
-	sprintf(text[2], "Blue Ball: %d\n", getCount);
-	glColor3f(0.0, 0.0, 0.0);
-	for (int i = 0; i < num_of_text; i++) {
-		glRasterPos2f(x, y - 0.05 * i);
-		for (int j = 0; text[i][j] != '\0'; j++)
-		{
-			glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, text[i][j]);
+	sprintf(text_eff, "           +%d", BONUS_POINT);
+	int c = (int)time(NULL);
+
+	if (bonus) {
+		if (time_check) {
+			check_time = ms;
+			time_check = false;
+		}
+		glRasterPos2f(x, y + 0.05 + btime);
+		for (int i = 0; text_eff[i] != '\0'; i++) {
+			//	for (int i = 0; i < score / 10; i++)
+
+			glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, text_eff[i]);
+		}
+
+		if (ms - check_time > 1) { //print during 1 second
+			time_check = true;
+			bonus = false;
 		}
 	}
+	else
+		btime = 0;
+
+	sprintf(text[1], "TIME: %s\n", timerBuffer);
+	sprintf(text[0], "Score: %d\n", score);
+
+	timetemp = sec % 10;
+
+	if (sec == 59) {
+		sec__ = 0;
+		life_extension = true;
+	}
+	if (min > 0)
+	{
+		glRasterPos2f(x, y - 0.15);
+
+		if (!life_extension)
+		{
+			sec__ = sec;
+			life_extension = true;
+		}
+
+		lifeTime = 20 - (sec - sec__);
+		cout << "LT__ : " << lifeTime << endl;
+
+		if (lifeTime == 0) {
+			hr = pControl->Stop();
+			PlaySound(TEXT("../ENDING.wav"), NULL, SND_ASYNC | SND_FILENAME);
+			endGame();
+		}
+		sprintf(text[2], "Time Left: %d\n", lifeTime);
+
+		for (int j = 0; text[2][j] != '\0'; j++)
+		{
+			glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, text[2][j]);
+		}
+	}
+	glColor3f(0.0, 0.0, 0.0);
+
+	glRasterPos2f(x, y - 0.05);
+	for (int j = 0; text[0][j] != '\0'; j++)
+	{
+		glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, text[0][j]);
+	}
+	glRasterPos2f(x, y - 0.1);
+	for (int j = 0; text[1][j] != '\0'; j++)
+	{
+		glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, text[1][j]);
+	}
+
 }
 
 
@@ -463,45 +587,92 @@ void convertDirection(int i)
 	else if (SC[i].checkz == 0)
 		SC[i].directionz -= SC[i].speedz;
 
+	if (i >= NUM_OF_GREEN && ((i % 3 == 1) || (i % 3 == 2))) {
+		if (SC[i].startPositionx + SC[i].directionx < -CUBESIZE ||
+			SC[i].startPositionx + SC[i].directionx > CUBESIZE ||
+			SC[i].startPositiony + SC[i].directiony < -CUBESIZE ||
+			SC[i].startPositiony + SC[i].directiony > CUBESIZE ||
+			SC[i].startPositionz + SC[i].directionz < -CUBESIZE ||
+			SC[i].startPositionz + SC[i].directionz > CUBESIZE)
+			SC[i].startPositionx = 45;
+	}
+
 }
 
 void SettingPositionandDirection(int i)
 {
 	if (SC[i].startPositionx > 43)
 	{
-		if (i % 3 == 0) {
-			//srand(time(NULL));
-			SC[i].startPositionx = CUBESIZE;
-			SC[i].startPositiony = float(rand() % int(CUBESIZE));
-			SC[i].startPositionz = float(rand() % int(CUBESIZE));
-			printf("%f %f %f\n", SC[i].startPositionx, SC[i].startPositiony, SC[i].startPositionz);
-		}
-		else if (i % 3 == 1) {
-			//srand(time(NULL));
-			SC[i].startPositionx = float(rand() % int(CUBESIZE));
-			SC[i].startPositiony = -CUBESIZE;
-			SC[i].startPositionz = float(rand() % int(CUBESIZE));
-		}
-		else if (i % 3 == 2) {
+		if (i % 6 == 0) {
 			//srand(time(NULL));
 			SC[i].startPositionx = -CUBESIZE;
 			SC[i].startPositiony = float(rand() % int(CUBESIZE));
 			SC[i].startPositionz = float(rand() % int(CUBESIZE));
 		}
+		else if (i % 6 == 1) {
+			//srand(time(NULL));
+			SC[i].startPositionx = float(rand() % int(CUBESIZE));
+			SC[i].startPositiony = -CUBESIZE;
+			SC[i].startPositionz = float(rand() % int(CUBESIZE));
+		}
+		else if (i % 6 == 2) {
+			//srand(time(NULL));
+			SC[i].startPositionx = float(rand() % int(CUBESIZE));
+			SC[i].startPositiony = float(rand() % int(CUBESIZE));
+			SC[i].startPositionz = -CUBESIZE;
+		}
+		else if (i % 6 == 3) {
+			//srand(time(NULL));
+			SC[i].startPositionx = CUBESIZE;
+			SC[i].startPositiony = float(rand() % int(CUBESIZE));
+			SC[i].startPositionz = float(rand() % int(CUBESIZE));
+		}
+		else if (i % 6 == 4) {
+			//srand(time(NULL));
+			SC[i].startPositionx = float(rand() % int(CUBESIZE));
+			SC[i].startPositiony = CUBESIZE;
+			SC[i].startPositionz = float(rand() % int(CUBESIZE));
+		}
+		else if (i % 6 == 5) {
+			//srand(time(NULL));
+			SC[i].startPositionx = float(rand() % int(CUBESIZE));
+			SC[i].startPositiony = float(rand() % int(CUBESIZE));
+			SC[i].startPositionz = CUBESIZE;
+		}
 
 		//srand(time(NULL));
 
-		SC[i].directionx = float((rand() % 50)) / 1000;
-		SC[i].directiony = float((rand() % 50)) / 1000;
-		SC[i].directionz = float((rand() % 50)) / 1000;
+		if (i >= NUM_OF_GREEN && ((i % 3 == 1) || (i % 3 == 2))) {
+			SC[i].directionx = (positionx - SC[i].startPositionx) / 100;
+			SC[i].directiony = (positiony - SC[i].startPositiony) / 100;
+			SC[i].directionz = (positionz - SC[i].startPositionz) / 100;
+		}
+		else {
+			SC[i].directionx = float((rand() % 50)) / 1000;
+			SC[i].directiony = float((rand() % 50)) / 1000;
+			SC[i].directionz = float((rand() % 50)) / 1000;
+		}
 
 		SC[i].checkx = 1;
 		SC[i].checky = 1;
 		SC[i].checkz = 1;
 
-		SC[i].speedx = float((rand() % 10)) / 100;
-		SC[i].speedy = float((rand() % 10)) / 100;
-		SC[i].speedz = float((rand() % 10)) / 100;
+
+		if (i < NUM_OF_GREEN) {
+			SC[i].speedx = float((rand() % 10)) / (1000 / BALL_SPEED);
+			SC[i].speedy = float((rand() % 10)) / (1000 / BALL_SPEED);
+			SC[i].speedz = float((rand() % 10)) / (1000 / BALL_SPEED);
+		}
+		else if (i >= NUM_OF_GREEN && ((i % 3 == 1) || (i % 3 == 2))) {
+			SC[i].speedx = SC[i].directionx;
+			SC[i].speedy = SC[i].directiony;
+			SC[i].speedz = SC[i].directionz;
+		}
+		else {
+			SC[i].speedx = float((rand() % 10)) / 100;
+			SC[i].speedy = float((rand() % 10)) / 100;
+			SC[i].speedz = float((rand() % 10)) / 100;
+		}
 
 	}
 }
@@ -519,199 +690,246 @@ void Make_Sphere(int i)
 		glLightfv(GL_LIGHT1, GL_DIFFUSE, diffuse2);
 		glLightfv(GL_LIGHT1, GL_SPECULAR, specular2);
 		glLightfv(GL_LIGHT1, GL_AMBIENT, ambient2);
+		glTranslatef(SC[i].startPositionx + SC[i].directionx, SC[i].startPositiony + SC[i].directiony, SC[i].startPositionz + SC[i].directionz);
+		glutSolidSphere(BALLSIZE, 100, 100);
 	}
-	else {
+	else if (i >= NUM_OF_GREEN && i % 3 == 0) {
 		glEnable(GL_LIGHT5);
 
 		glLightfv(GL_LIGHT5, GL_POSITION, Ipos8);
 		glLightfv(GL_LIGHT5, GL_DIFFUSE, diffuse8);
 		glLightfv(GL_LIGHT5, GL_SPECULAR, specular8);
 		glLightfv(GL_LIGHT5, GL_AMBIENT, ambient8);
+		glTranslatef(SC[i].startPositionx + SC[i].directionx, SC[i].startPositiony + SC[i].directiony, SC[i].startPositionz + SC[i].directionz);
+		glutSolidTorus(BALLSIZE / 4, BALLSIZE * 0.8, 100, 100);
 	}
-	glTranslatef(SC[i].startPositionx + SC[i].directionx, SC[i].startPositiony + SC[i].directiony, SC[i].startPositionz + SC[i].directionz);
-	glutSolidSphere(BALLSIZE, 100, 100);
+	else {
+		glEnable(GL_LIGHT6);
+
+		glLightfv(GL_LIGHT6, GL_POSITION, Ipos6);
+		glLightfv(GL_LIGHT6, GL_DIFFUSE, diffuse6);
+		glLightfv(GL_LIGHT6, GL_SPECULAR, specular6);
+		glLightfv(GL_LIGHT6, GL_AMBIENT, ambient6);
+		glTranslatef(SC[i].startPositionx + SC[i].directionx, SC[i].startPositiony + SC[i].directiony, SC[i].startPositionz + SC[i].directionz);
+		glutSolidSphere(BALLSIZE, 100, 100);
+	}
+
 
 	if (i < NUM_OF_GREEN) {
 		glDisable(GL_LIGHT1);
 	}
-	else
+	else if (i >= NUM_OF_GREEN && i % 3 == 0) {
 		glDisable(GL_LIGHT5);
+	}
+	else
+		glDisable(GL_LIGHT6);
 	glPopMatrix();
 
 }
+
 
 void check_Collision(int i)
 {
 	float tempx = SC[i].startPositionx + SC[i].directionx - positionx;
 	float tempy = SC[i].startPositiony + SC[i].directiony - positiony;
 	float tempz = SC[i].startPositionz + SC[i].directionz - positionz;
-	if (sqrt(tempx * tempx + tempy * tempy + tempz * tempz) < RABBITSIZE + BALLSIZE && i < NUM_OF_GREEN) {
-		char msg[100];
+	if (((sqrt(tempx * tempx + tempy * tempy + tempz * tempz)) < RABBITSIZE + BALLSIZE) &&
+		((i < NUM_OF_GREEN) || ((i >= NUM_OF_GREEN) && ((i % 3 == 1) || (i % 3 == 2))))) {
 		hr = pControl->Stop();
 		PlaySound(TEXT("../ENDING.wav"), NULL, SND_ASYNC | SND_FILENAME);
-		wsprintf(msg, TEXT("Your score is %d."), score); //message
-		MessageBox(NULL, msg, TEXT("Game Over"), NULL); //Box name
-		exit(1);
+		endGame();
 	}
-	else if (sqrt(tempx * tempx + tempy * tempy + tempz * tempz) < RABBITSIZE + BALLSIZE && i >= NUM_OF_GREEN)
+	else if (sqrt(tempx * tempx + tempy * tempy + tempz * tempz) < RABBITSIZE + BALLSIZE && i >= NUM_OF_GREEN && (i % 3 == 0))
 	{
-		//RY
 		PlaySound(TEXT("../bbok.wav"), NULL, SND_SYNC | SND_FILENAME);
 		score += 1000;
 		SC[i].startPositionx = 45;
-		getCount++;
+		bonus = true;
+		if (min > 0) { // over the 1 min
+			life_extension = false;
+		}
 	}
 }
+
+void CreateMap(float size)
+{
+	glBegin(GL_QUADS);
+
+	glTexCoord2d(0, 0); glVertex3d(-size, -size, size);
+	glTexCoord2d(1, 0); glVertex3d(size, -size, size);
+	glTexCoord2d(1, 1); glVertex3d(size, size, size);
+	glTexCoord2d(0, 1); glVertex3d(-size, size, size);
+
+	glEnd();
+}
+bool before_start = true;
+bool first = true;
+bool first_ = true;
+bool speed_check = true;
+
 void display(void)
 {
-	// update dynamic cubemap per frame
-	glEnable(GL_LIGHTING);
-
-
-
-	// render something here...
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-	gluLookAt(eyePosition[0] + positionx, eyePosition[1] + positiony, eyePosition[2] + positionz,
-		positionx, positiony, positionz,
-		0.0f, 1.0f, 0.0f);
-	glEnable(GL_TEXTURE_2D);
-	glPushMatrix();
-
-	glEnable(GL_LIGHT3);
-
-	glLightfv(GL_LIGHT3, GL_POSITION, Ipos);
-	glLightfv(GL_LIGHT3, GL_DIFFUSE, diffuse);
-	glLightfv(GL_LIGHT3, GL_SPECULAR, specular);
-	glLightfv(GL_LIGHT3, GL_AMBIENT, ambient);
-
-	glEnable(GL_LIGHT4);
-
-	glLightfv(GL_LIGHT4, GL_POSITION, Ipos);
-	glLightfv(GL_LIGHT4, GL_DIFFUSE, diffuse3);
-	glLightfv(GL_LIGHT4, GL_SPECULAR, specular);
-	glLightfv(GL_LIGHT4, GL_AMBIENT, ambient);
-
-	glTranslatef(0, 0, 0);
-	glScalef(zoom, zoom, zoom);
-
-	CreateCube(CUBESIZE);
-
-	glDisable(GL_LIGHT3);
-	glDisable(GL_LIGHT4);
-
-	glPopMatrix();
-
-	glPushMatrix();
-
-	glLineWidth(4);
-
-	glColor3f(1.0f, 0.0f, 0.0f);
-	glBegin(GL_LINE_LOOP);
-	glVertex3f(10.0, 0.0, 0.0);
-	glVertex3f(-10.0, 0.0, 0.0);
-	glEnd();
-
-	glColor3f(0.0f, 1.0f, 0.0f);
-	glBegin(GL_LINE_LOOP);
-	glVertex3f(0.0, 10.0, 0.0);
-	glVertex3f(0.0, -10.0, 0.0);
-	glEnd();
-
-	glColor3f(0.0f, 0.0f, 1.0f);
-	glBegin(GL_LINE_LOOP);
-	glVertex3f(0.0, 0.0, 10.0);
-	glVertex3f(0.0, 0.0, -10.0);
-	glEnd();
-
-	glPopMatrix();
-
-	//glPushMatrix();
-
-	//glTranslatef(0, time, time + 7);
-	//glutSolidSphere(0.2f, 100, 100);
-	//glTranslatef(positionx, positiony, 7);
-	//glPopMatrix();
-
-	for (int i = 0; i < NUM_OF_GREEN; i++) {
-		Make_Sphere(i);
-		check_Collision(i);
+	if (speed_check && min > 0) {
+		for (int i = 0; i < NUM_OF_GREEN; i++)
+		{
+			SC[i].speedx = float((rand() % 10)) / (1000 / 200);
+			SC[i].speedy = float((rand() % 10)) / (1000 / 200);
+			SC[i].speedz = float((rand() % 10)) / (1000 / 200);
+		}
+		speed_check = false;
 	}
 
-	for (int i = NUM_OF_GREEN; i < NUM_OF_GREEN + secm / 5; i++) {
-		if (i < NUM_OF_MAX) {
+	if (before_start) {
+		if (first) {
+			before_init();
+			first = false;
+		}
+
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glMatrixMode(GL_MODELVIEW);
+		glLoadIdentity();
+		gluLookAt(0, 0, 50,
+			0, 0, 0,
+			0.0f, 1.0f, 0.0f);
+		glEnable(GL_TEXTURE_2D);
+		glPushMatrix();
+
+
+		glTranslatef(0, 0, 0);
+		glScalef(zoom, zoom, zoom);
+
+		CreateMap(10);
+		glPopMatrix();
+
+		glFlush();
+
+		glutSwapBuffers();
+	}
+	else {
+		// update dynamic cubemap per frame
+
+		glEnable(GL_LIGHTING);
+		if (first_) {
+			init();
+			stopwatch(1); // stopwatch ON
+			first_ = false;
+
+		}
+
+
+		// render something here...
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glMatrixMode(GL_MODELVIEW);
+		glLoadIdentity();
+		gluLookAt(eyePosition[0] + positionx, eyePosition[1] + positiony, eyePosition[2] + positionz,
+			positionx, positiony, positionz,
+			0.0f, 1.0f, 0.0f);
+		glEnable(GL_TEXTURE_2D);
+		glPushMatrix();
+
+		glEnable(GL_LIGHT3);
+
+		glLightfv(GL_LIGHT3, GL_POSITION, Ipos);
+		glLightfv(GL_LIGHT3, GL_DIFFUSE, diffuse);
+		glLightfv(GL_LIGHT3, GL_SPECULAR, specular);
+		glLightfv(GL_LIGHT3, GL_AMBIENT, ambient);
+
+		glEnable(GL_LIGHT4);
+
+		glLightfv(GL_LIGHT4, GL_POSITION, Ipos);
+		glLightfv(GL_LIGHT4, GL_DIFFUSE, diffuse3);
+		glLightfv(GL_LIGHT4, GL_SPECULAR, specular);
+		glLightfv(GL_LIGHT4, GL_AMBIENT, ambient);
+
+		glTranslatef(0, 0, 0);
+		glScalef(zoom, zoom, zoom);
+
+		CreateCube(CUBESIZE);
+
+		glDisable(GL_LIGHT3);
+		glDisable(GL_LIGHT4);
+
+		glPopMatrix();
+
+		for (int i = 0; i < NUM_OF_GREEN; i++) {
 			Make_Sphere(i);
 			check_Collision(i);
 		}
+
+		for (int i = NUM_OF_GREEN; i < NUM_OF_GREEN + ms / 5; i++) {
+			if (i < NUM_OF_MAX) {
+				Make_Sphere(i);
+				check_Collision(i);
+			}
+		}
+
+		btime = btime + 0.001;
+
+		glLoadIdentity();
+		gluLookAt(0, 0.0, 3.0,
+			0.0, 0.0, 0.0,
+			0.0f, 1.0f, 0.0f);
+		glPushMatrix();
+
+
+		text(-0.8, -0.8); // text added
+
+		glPopMatrix();
+
+		glPushMatrix();
+
+		glEnable(GL_LIGHT0);
+
+		glLightfv(GL_LIGHT0, GL_POSITION, Ipos4);
+		glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse4);
+		glLightfv(GL_LIGHT0, GL_SPECULAR, specular4);
+		glLightfv(GL_LIGHT0, GL_AMBIENT, ambient4);
+
+		glScalef(zoom, zoom, zoom); //scale up down 
+		glTranslatef(0, -0.1, 0);
+		glRotatef(anglex, 0.0f, 1.0f, 0.0f);
+
+		GLuint vertexbuffer;
+		glGenBuffers(1, &vertexbuffer);
+		glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
+		glBufferData(GL_ARRAY_BUFFER, num_vertex * 3 * 4 * 2, 0, GL_STATIC_DRAW);
+		glBufferSubData(GL_ARRAY_BUFFER, 0, num_vertex * 3 * 4, vertex);
+		glBufferSubData(GL_ARRAY_BUFFER, num_vertex * 3 * 4, num_vertex * 3 * 4, vertexnormal);
+
+		GLuint indexbuffer;
+		glGenBuffers(1, &indexbuffer);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexbuffer);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, num_face * 3 * 4, face, GL_STATIC_DRAW);
+
+
+		glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexbuffer);
+
+		glEnableClientState(GL_VERTEX_ARRAY);
+		glEnableClientState(GL_NORMAL_ARRAY);
+
+		glVertexPointer(3, GL_FLOAT, 0, (void*)0);
+		glNormalPointer(GL_FLOAT, 0, (void*)(num_vertex * 3 * 4));
+
+
+		glDrawElements(GL_TRIANGLES, num_face * 3, GL_UNSIGNED_INT, (void*)0);
+
+
+		glDisableClientState(GL_VERTEX_ARRAY);
+		glDisableClientState(GL_NORMAL_ARRAY);
+
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+		glDeleteBuffers(1, &vertexbuffer);
+		glDeleteBuffers(1, &indexbuffer);
+		glDisable(GL_LIGHT0);
+		glPopMatrix();
+
+		glFlush();
+
+		glutSwapBuffers();
 	}
-
-	glLoadIdentity();
-	gluLookAt(0, 0.0, 3.0,
-		0.0, 0.0, 0.0,
-		0.0f, 1.0f, 0.0f);
-	glPushMatrix();
-	text(-0.8, -0.8); // text added
-	glPopMatrix();
-
-	glPushMatrix();
-
-	glEnable(GL_LIGHT0);
-
-	glLightfv(GL_LIGHT0, GL_POSITION, Ipos4);
-	glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse4);
-	glLightfv(GL_LIGHT0, GL_SPECULAR, specular4);
-	glLightfv(GL_LIGHT0, GL_AMBIENT, ambient4);
-	//glTranslatef(positionx, positiony, 1);
-	glScalef(zoom, zoom, zoom); //scale up down 
-	glTranslatef(0, -0.1, 0);
-
-	/*GLfloat temp_matrix[16];
-	glRotatef(anglex, 1.0f, 0.0f, 0.0f);
-	glRotatef(angley, 0.0f, 1.0f, 0.0f);
-*/
-
-//	glColor3ub(169, 200, 250);
-	GLuint vertexbuffer;
-	glGenBuffers(1, &vertexbuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
-	glBufferData(GL_ARRAY_BUFFER, num_vertex * 3 * 4 * 2, 0, GL_STATIC_DRAW);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, num_vertex * 3 * 4, vertex);
-	glBufferSubData(GL_ARRAY_BUFFER, num_vertex * 3 * 4, num_vertex * 3 * 4, vertexnormal);
-
-	GLuint indexbuffer;
-	glGenBuffers(1, &indexbuffer);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexbuffer);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, num_face * 3 * 4, face, GL_STATIC_DRAW);
-
-
-	glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexbuffer);
-
-	glEnableClientState(GL_VERTEX_ARRAY);
-	glEnableClientState(GL_NORMAL_ARRAY);
-
-	glVertexPointer(3, GL_FLOAT, 0, (void*)0);
-	glNormalPointer(GL_FLOAT, 0, (void*)(num_vertex * 3 * 4));
-
-
-	glDrawElements(GL_TRIANGLES, num_face * 3, GL_UNSIGNED_INT, (void*)0);
-
-
-	glDisableClientState(GL_VERTEX_ARRAY);
-	glDisableClientState(GL_NORMAL_ARRAY);
-
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-	glDeleteBuffers(1, &vertexbuffer);
-	glDeleteBuffers(1, &indexbuffer);
-	glDisable(GL_LIGHT0);
-	glPopMatrix();
-
-	glFlush();
-
-	glutSwapBuffers();
 }
 
 void reshape(int w, int h)
@@ -757,48 +975,33 @@ void keyboard(unsigned char key, int x, int y)
 	{
 	case 'w':
 		if (boundary(positionx) && boundary(positiony) && boundary(positionz)) {
-			positionx -= SPEED * eyePosition[0];
-			positiony -= SPEED * eyePosition[1];
-			positionz -= SPEED * eyePosition[2];
+			positionx -= RABBIT_SPEED * eyePosition[0];
+			positiony -= RABBIT_SPEED * eyePosition[1];
+			positionz -= RABBIT_SPEED * eyePosition[2];
 		}
 		else
 			bangbang();
 		break;
 	case 's':
 		if (boundary(positionx) && boundary(positiony) && boundary(positionz)) {
-			positionx += SPEED * eyePosition[0];
-			positiony += SPEED * eyePosition[1];
-			positionz += SPEED * eyePosition[2];
+			positionx += RABBIT_SPEED * eyePosition[0];
+			positiony += RABBIT_SPEED * eyePosition[1];
+			positionz += RABBIT_SPEED * eyePosition[2];
 		}
 		else
 			bangbang();
 		break;
-	case '2':
-
+	case '1':
+		before_start = true;
 		break;
-	case '3':
-
-		break;
-	case 'o':
-
+	case 13:
+		before_start = false;
 		break;
 
-	case 'b':
-		zoom += 0.05;
-		//printf("zoom: %f\n", zoom);
-		break;
-	case 'v':
-		zoom -= 0.05;
-		//printf("zoom: %f\n", zoom);
-		break;
 	case 27:
-		char msg[100];
-		wsprintf(msg, TEXT("Your score is %d."), score); //message
-		MessageBox(NULL, msg, TEXT("Game Over"), NULL); //Box name
-		exit(1);
+		endGame();
 		break;
 	}
-	//glutPostRedisplay();
 }
 
 int mouseButton = -1;
@@ -807,6 +1010,25 @@ void  mouseClick(int button, int state, int x, int y) {
 	mouseButton = button;
 	mousePos[0] = x;
 	mousePos[1] = y;
+
+	if (button == GLUT_LEFT_BUTTON) {
+		if (state == GLUT_DOWN)
+		{
+			if (left_button_pressed == false) {
+				left_button_pressed = true;
+				mouse_prev_x = x;
+				mouse_prev_y = y;
+			}
+		}
+		else if (state == GLUT_UP) {
+			left_button_pressed = false;
+			mouse_dx = 0;
+			mouse_dy = 0;
+			anglex = -118.0;
+		}
+
+	}
+
 }
 float* normalize(float* a) {
 	float* t = new float[3];
@@ -855,6 +1077,20 @@ void mouseMove(int x, int y) {
 	if (mouseButton == GLUT_RIGHT_BUTTON) {
 		scale += 1.0 * (mousePos[1] - y) / 20000;
 	}
+
+	mouse_dx = x - mouse_prev_x;
+	mouse_dy = y - mouse_prev_y;
+
+	mouse_prev_x = x;
+	mouse_prev_y = y;
+
+	if (left_button_pressed == true) {
+		anglex -= (float)mouse_dx / 10;
+		angley += (float)mouse_dy;
+	}
+	else
+		anglex = 223;
+
 	glutPostRedisplay();
 }
 
@@ -866,8 +1102,7 @@ int main(int argc, char** argv)
 	glutInitWindowSize(screenSize, screenSize);
 	glutInitWindowPosition(100, 100);
 	glutCreateWindow(argv[0]);
-	init();
-	stopwatch(1); // stopwatch ON
+
 	glutSetCursor(GLUT_CURSOR_DESTROY);
 	get_vertex_face();
 	calculate_normal_vertex();
