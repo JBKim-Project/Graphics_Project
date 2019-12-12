@@ -23,6 +23,7 @@
 #include <GL/glew.h>
 #include <time.h>
 #include <fstream>
+//RY
 #include<MMSystem.h>
 #pragma comment(lib, "winmm.lib")
 
@@ -521,6 +522,7 @@ void check_Collision(int i)
 	}
 	else if (sqrt(tempx * tempx + tempy * tempy + tempz * tempz) < RABBITSIZE + BALLSIZE && i >= NUM_OF_GREEN)
 	{
+		//RY
 		PlaySound(TEXT("../bbok.wav"), NULL, SND_SYNC | SND_FILENAME);
 		score += 1000;
 		SC[i].startPositionx = 45;
