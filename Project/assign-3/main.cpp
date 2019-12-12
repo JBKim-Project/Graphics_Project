@@ -23,6 +23,9 @@
 #include <GL/glew.h>
 #include <time.h>
 #include <fstream>
+#include<MMSystem.h>
+#pragma comment(lib, "winmm.lib")
+
 #define NUM_OF_GREEN 100
 #define NUM_OF_MAX 1000
 #define CUBESIZE 40.0
@@ -30,6 +33,7 @@
 #define BALLSIZE 2.0
 #define RABBITSIZE 0.15
 using namespace std;
+
 //
 // Definitions
 //
@@ -108,6 +112,7 @@ typedef struct {
 	unsigned char x, y, z, w;
 } uchar4;
 typedef unsigned char uchar;
+
 
 // BMP loader
 void LoadBMPFile(uchar4** dst, int* width, int* height, const char* name);
@@ -516,6 +521,7 @@ void check_Collision(int i)
 	}
 	else if (sqrt(tempx * tempx + tempy * tempy + tempz * tempz) < RABBITSIZE + BALLSIZE && i >= NUM_OF_GREEN)
 	{
+		PlaySound(TEXT("../bbok.wav"), NULL, SND_SYNC | SND_FILENAME);
 		score += 1000;
 		SC[i].startPositionx = 45;
 		getCount++;
