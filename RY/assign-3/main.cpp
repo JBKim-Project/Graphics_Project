@@ -92,7 +92,7 @@ int mouse_dx = 0, mouse_dy = 0;
 bool left_button_pressed = false;
 bool middle_button_pressed = false;
 
-float anglex = -118.0, angley = 223.0, anglez = 0;
+float anglex = -118.0, angley = 0.0, anglez = 0;
 float zoom = 1.35;
 float positionx = 0, positiony = 0, positionz = 0;
 float btime = 0;
@@ -888,6 +888,7 @@ void display(void)
 		glScalef(zoom, zoom, zoom); //scale up down 
 		glTranslatef(0, -0.1, 0);
 		glRotatef(anglex, 0.0f, 1.0f, 0.0f);
+		glRotatef(angley, 1.0f, 0.0f, 0.0f);
 
 		GLuint vertexbuffer;
 		glGenBuffers(1, &vertexbuffer);
@@ -1025,6 +1026,7 @@ void  mouseClick(int button, int state, int x, int y) {
 			mouse_dx = 0;
 			mouse_dy = 0;
 			anglex = -118.0;
+			angley = 0.0;
 		}
 
 	}
@@ -1086,10 +1088,8 @@ void mouseMove(int x, int y) {
 
 	if (left_button_pressed == true) {
 		anglex -= (float)mouse_dx / 10;
-		angley += (float)mouse_dy;
+		angley += (float)mouse_dy / 10;
 	}
-	else
-		anglex = 223;
 
 	glutPostRedisplay();
 }
