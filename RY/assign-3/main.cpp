@@ -25,22 +25,21 @@
 #include <fstream>
 #include<MMSystem.h> 
 #include <dshow.h>
-#include <thread>
+
 #pragma comment (lib, "strmiids.lib")
 #pragma comment(lib, "Winmm.lib") 
 
-#define num_of_green 100
-#define num_of_max 1000
-#define cubeSize 40.0
-#define v 0.2
-#define Ballsize 2.0
-#define RabbitSize 0.15
+#define NUM_OF_GREEN 100
+#define NUM_OF_MAX 1000
+#define CUBESIZE 40.0
+#define SPEED 0.2
+#define BALLSIZE 2.0
+#define RABBITSIZE 0.15
 using namespace std;
+
 //
 // Definitions
 //
-bool sound = true;
-
 float eyePosition[3] = { 0,0,1 };
 float up[3] = { 0,1,0 };
 float scale = 1;
@@ -93,7 +92,11 @@ int num_vertex, num_face, zero;
 
 int score = 0;
 bool is_Collision = false;
-
+int getCount = 0;
+IGraphBuilder* pGraph = NULL;
+IMediaControl* pControl = NULL;
+IMediaEvent* pEvent = NULL;
+HRESULT hr = CoInitialize(NULL);
 struct SphereComponent {
 	float startPositionx = 45;
 	float startPositiony = 0;
@@ -110,12 +113,13 @@ struct SphereComponent {
 	bool is_eaten = false;
 };
 
-struct SphereComponent SC[num_of_max];
+struct SphereComponent SC[NUM_OF_MAX];
 
 typedef struct {
 	unsigned char x, y, z, w;
 } uchar4;
 typedef unsigned char uchar;
+
 
 // BMP loader
 void LoadBMPFile(uchar4** dst, int* width, int* height, const char* name);
@@ -142,42 +146,29 @@ GLuint fb, depth_rb;
 //
 // Functions
 //
-
 void playBGM()
 {
-	IGraphBuilder* pGraph = NULL;
-	IMediaControl* pControl = NULL;
-	IMediaEvent* pEvent = NULL;
 	// Initialize the COM library.
-	HRESULT hr = CoInitialize(NULL);
+
 	if (FAILED(hr)) {
 		printf("ERROR - Could not initialize COM library");
-	//	exit(-1);
+		//	exit(-1);
 	} // Create the filter graph manager and query for interfaces.
 	hr = CoCreateInstance(CLSID_FilterGraph, NULL, CLSCTX_INPROC_SERVER, IID_IGraphBuilder, (void**)& pGraph);
 	if (FAILED(hr)) {
 		printf("ERROR - Could not create the Filter Graph Manager.");
-	//	exit(-1);
+		//	exit(-1);
 	}
 	hr = pGraph->QueryInterface(IID_IMediaControl, (void**)& pControl);
 	hr = pGraph->QueryInterface(IID_IMediaEvent, (void**)& pEvent);
 	// Build the graph.IMPORTANT: Change this string to a file on your system.
+
 	hr = pGraph->RenderFile(L"../NEWBGM.mp3", NULL);
 
 	if (SUCCEEDED(hr)) {
 		// Run the graph.
 		hr = pControl->Run();
-		if (SUCCEEDED(hr)) {
-			// Wait for completion.
-			long evCode;
-			pEvent->WaitForCompletion(INFINITE, &evCode);
-			// Note: Do not use INFINITE in a real application, because it // can block indefinitely.
-		}
 	}
-	pControl->Release();
-	pEvent->Release();
-	pGraph->Release();
-	CoUninitialize();
 }
 
 void get_vertex_face(void)
@@ -312,8 +303,7 @@ void makeSyntheticImages(void)
 void init(void)
 {
 	// You need to ues glew
-	thread t1(playBGM);
-	t1.detach();
+
 	glewInit();
 
 
@@ -422,29 +412,30 @@ int stopwatch(int onOff) {
 // text added
 void text(double x, double y)
 {
-	char text[32];
-	char text2[32];
+	const int num_of_text = 3;
+	char text[num_of_text][32];
 	//sprintf(text, ": %.1f", zoom);
 	int sec = stopwatch(0);
 	score += 1;
-	sprintf(text, "TIME: %s\n", timerBuffer);
-	sprintf(text2, "Score: %d\n", score);
+	sprintf(text[0], "TIME: %s\n", timerBuffer);
+	sprintf(text[1], "Score: %d\n", score);
+	sprintf(text[2], "Blue Ball: %d\n", getCount);
 	glColor3f(0.0, 0.0, 0.0);
-	glRasterPos2f(x, y);
-	for (int i = 0; text[i] != '\0'; i++)
-		glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, text[i]);
-	glColor3f(0.0, 0.0, 0.0);
-	glRasterPos2f(x, y - 0.05);
-	for (int i = 0; text2[i] != '\0'; i++)
-		glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, text2[i]);
+	for (int i = 0; i < num_of_text; i++) {
+		glRasterPos2f(x, y - 0.05 * i);
+		for (int j = 0; text[i][j] != '\0'; j++)
+		{
+			glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, text[i][j]);
+		}
+	}
 }
 
 
 void convertDirection(int i)
 {
-	if (SC[i].startPositionx + SC[i].directionx < -cubeSize)
+	if (SC[i].startPositionx + SC[i].directionx < -CUBESIZE)
 		SC[i].checkx = 1;
-	else if (SC[i].startPositionx + SC[i].directionx > cubeSize)
+	else if (SC[i].startPositionx + SC[i].directionx > CUBESIZE)
 		SC[i].checkx = 0;
 
 	if (SC[i].checkx == 1)
@@ -452,9 +443,9 @@ void convertDirection(int i)
 	else if (SC[i].checkx == 0)
 		SC[i].directionx -= SC[i].speedx;
 
-	if (SC[i].startPositiony + SC[i].directiony < -cubeSize)
+	if (SC[i].startPositiony + SC[i].directiony < -CUBESIZE)
 		SC[i].checky = 1;
-	else if (SC[i].startPositiony + SC[i].directiony > cubeSize)
+	else if (SC[i].startPositiony + SC[i].directiony > CUBESIZE)
 		SC[i].checky = 0;
 
 	if (SC[i].checky == 1)
@@ -462,9 +453,9 @@ void convertDirection(int i)
 	else if (SC[i].checky == 0)
 		SC[i].directiony -= SC[i].speedy;
 
-	if (SC[i].startPositionz + SC[i].directionz < -cubeSize)
+	if (SC[i].startPositionz + SC[i].directionz < -CUBESIZE)
 		SC[i].checkz = 1;
-	else if (SC[i].startPositionz + SC[i].directionz > cubeSize)
+	else if (SC[i].startPositionz + SC[i].directionz > CUBESIZE)
 		SC[i].checkz = 0;
 
 	if (SC[i].checkz == 1)
@@ -480,22 +471,22 @@ void SettingPositionandDirection(int i)
 	{
 		if (i % 3 == 0) {
 			//srand(time(NULL));
-			SC[i].startPositionx = cubeSize;
-			SC[i].startPositiony = float(rand() % int(cubeSize));
-			SC[i].startPositionz = float(rand() % int(cubeSize));
+			SC[i].startPositionx = CUBESIZE;
+			SC[i].startPositiony = float(rand() % int(CUBESIZE));
+			SC[i].startPositionz = float(rand() % int(CUBESIZE));
 			printf("%f %f %f\n", SC[i].startPositionx, SC[i].startPositiony, SC[i].startPositionz);
 		}
 		else if (i % 3 == 1) {
 			//srand(time(NULL));
-			SC[i].startPositionx = float(rand() % int(cubeSize));
-			SC[i].startPositiony = -cubeSize;
-			SC[i].startPositionz = float(rand() % int(cubeSize));
+			SC[i].startPositionx = float(rand() % int(CUBESIZE));
+			SC[i].startPositiony = -CUBESIZE;
+			SC[i].startPositionz = float(rand() % int(CUBESIZE));
 		}
 		else if (i % 3 == 2) {
 			//srand(time(NULL));
-			SC[i].startPositionx = -cubeSize;
-			SC[i].startPositiony = float(rand() % int(cubeSize));
-			SC[i].startPositionz = float(rand() % int(cubeSize));
+			SC[i].startPositionx = -CUBESIZE;
+			SC[i].startPositiony = float(rand() % int(CUBESIZE));
+			SC[i].startPositionz = float(rand() % int(CUBESIZE));
 		}
 
 		//srand(time(NULL));
@@ -521,7 +512,7 @@ void Make_Sphere(int i)
 	SettingPositionandDirection(i);
 	convertDirection(i);
 
-	if (i < num_of_green) {
+	if (i < NUM_OF_GREEN) {
 		glEnable(GL_LIGHT1);
 
 		glLightfv(GL_LIGHT1, GL_POSITION, Ipos2);
@@ -538,9 +529,9 @@ void Make_Sphere(int i)
 		glLightfv(GL_LIGHT5, GL_AMBIENT, ambient8);
 	}
 	glTranslatef(SC[i].startPositionx + SC[i].directionx, SC[i].startPositiony + SC[i].directiony, SC[i].startPositionz + SC[i].directionz);
-	glutSolidSphere(Ballsize, 100, 100);
+	glutSolidSphere(BALLSIZE, 100, 100);
 
-	if (i < num_of_green) {
+	if (i < NUM_OF_GREEN) {
 		glDisable(GL_LIGHT1);
 	}
 	else
@@ -554,31 +545,29 @@ void check_Collision(int i)
 	float tempx = SC[i].startPositionx + SC[i].directionx - positionx;
 	float tempy = SC[i].startPositiony + SC[i].directiony - positiony;
 	float tempz = SC[i].startPositionz + SC[i].directionz - positionz;
-	if (sqrt(tempx * tempx + tempy * tempy + tempz * tempz) < RabbitSize + Ballsize && i < num_of_green) {
+	if (sqrt(tempx * tempx + tempy * tempy + tempz * tempz) < RABBITSIZE + BALLSIZE && i < NUM_OF_GREEN) {
 		char msg[100];
+		hr = pControl->Stop();
+		PlaySound(TEXT("../ENDING.wav"), NULL, SND_ASYNC | SND_FILENAME);
 		wsprintf(msg, TEXT("Your score is %d."), score); //message
 		MessageBox(NULL, msg, TEXT("Game Over"), NULL); //Box name
 		exit(1);
 	}
-	else if (sqrt(tempx * tempx + tempy * tempy + tempz * tempz) < RabbitSize + Ballsize && i >= num_of_green)
+	else if (sqrt(tempx * tempx + tempy * tempy + tempz * tempz) < RABBITSIZE + BALLSIZE && i >= NUM_OF_GREEN)
 	{
-		PlaySound(TEXT("../bbok.wav"), NULL, SND_ASYNC | SND_FILENAME );
-		//sound = true;
+		//RY
+		PlaySound(TEXT("../bbok.wav"), NULL, SND_SYNC | SND_FILENAME);
 		score += 1000;
 		SC[i].startPositionx = 45;
+		getCount++;
 	}
 }
-
 void display(void)
 {
-	//if (sound) {
-	//	PlaySound(TEXT("../BGM1.wav"), NULL, SND_FILENAME | SND_ASYNC | SND_NODEFAULT | SND_LOOP);
-	//	sound = false;
-	//}
-
-		
-		// update dynamic cubemap per frame
+	// update dynamic cubemap per frame
 	glEnable(GL_LIGHTING);
+
+
 
 	// render something here...
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -607,7 +596,7 @@ void display(void)
 	glTranslatef(0, 0, 0);
 	glScalef(zoom, zoom, zoom);
 
-	CreateCube(cubeSize);
+	CreateCube(CUBESIZE);
 
 	glDisable(GL_LIGHT3);
 	glDisable(GL_LIGHT4);
@@ -645,13 +634,13 @@ void display(void)
 	//glTranslatef(positionx, positiony, 7);
 	//glPopMatrix();
 
-	for (int i = 0; i < num_of_green; i++) {
+	for (int i = 0; i < NUM_OF_GREEN; i++) {
 		Make_Sphere(i);
 		check_Collision(i);
 	}
 
-	for (int i = num_of_green; i < num_of_green + secm / 5; i++) {
-		if (i < num_of_max) {
+	for (int i = NUM_OF_GREEN; i < NUM_OF_GREEN + secm / 5; i++) {
+		if (i < NUM_OF_MAX) {
 			Make_Sphere(i);
 			check_Collision(i);
 		}
@@ -740,7 +729,7 @@ void reshape(int w, int h)
 
 bool boundary(float b)
 {
-	if (b > cubeSize - 5 || b < -cubeSize + 5)
+	if (b > CUBESIZE - 5 || b < -CUBESIZE + 5)
 		return false;
 	return true;
 }
@@ -748,17 +737,17 @@ bool boundary(float b)
 void bangbang(void)
 {
 	if (!boundary(positionx) && positionx > 0)
-		positionx = cubeSize - 5.1;
+		positionx = CUBESIZE - 5.1;
 	else if (!boundary(positionx) && positionx < 0)
-		positionx = -cubeSize + 5.1;
+		positionx = -CUBESIZE + 5.1;
 	if (!boundary(positiony) && positiony > 0)
-		positiony = cubeSize - 5.1;
+		positiony = CUBESIZE - 5.1;
 	else if (!boundary(positiony) && positiony < 0)
-		positiony = -cubeSize + 5.1;
+		positiony = -CUBESIZE + 5.1;
 	if (!boundary(positionz) && positionz > 0)
-		positionz = cubeSize - 5.1;
+		positionz = CUBESIZE - 5.1;
 	else if (!boundary(positionz) && positionz < 0)
-		positionz = -cubeSize + 5.1;
+		positionz = -CUBESIZE + 5.1;
 }
 
 void keyboard(unsigned char key, int x, int y)
@@ -768,18 +757,18 @@ void keyboard(unsigned char key, int x, int y)
 	{
 	case 'w':
 		if (boundary(positionx) && boundary(positiony) && boundary(positionz)) {
-			positionx -= v * eyePosition[0];
-			positiony -= v * eyePosition[1];
-			positionz -= v * eyePosition[2];
+			positionx -= SPEED * eyePosition[0];
+			positiony -= SPEED * eyePosition[1];
+			positionz -= SPEED * eyePosition[2];
 		}
 		else
 			bangbang();
 		break;
 	case 's':
 		if (boundary(positionx) && boundary(positiony) && boundary(positionz)) {
-			positionx += v * eyePosition[0];
-			positiony += v * eyePosition[1];
-			positionz += v * eyePosition[2];
+			positionx += SPEED * eyePosition[0];
+			positiony += SPEED * eyePosition[1];
+			positionz += SPEED * eyePosition[2];
 		}
 		else
 			bangbang();
@@ -871,8 +860,7 @@ void mouseMove(int x, int y) {
 
 int main(int argc, char** argv)
 {
-
-	
+	playBGM();
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
 	glutInitWindowSize(screenSize, screenSize);
@@ -891,7 +879,5 @@ int main(int argc, char** argv)
 	glutMotionFunc(mouseMove);
 
 	glutMainLoop();
-
 	return 0;
 }
-
