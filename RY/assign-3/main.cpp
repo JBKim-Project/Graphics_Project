@@ -29,8 +29,6 @@
 #pragma comment (lib, "strmiids.lib")
 #pragma comment(lib, "Winmm.lib") 
 
-
-
 #define num_of_green 100
 #define num_of_max 1000
 #define cubeSize 40.0
@@ -164,10 +162,12 @@ void playBGM()
 	hr = pGraph->QueryInterface(IID_IMediaControl, (void**)& pControl);
 	hr = pGraph->QueryInterface(IID_IMediaEvent, (void**)& pEvent);
 	// Build the graph.IMPORTANT: Change this string to a file on your system.
-	hr = pGraph->RenderFile(L"../BGM.mp3", NULL);
+	hr = pGraph->RenderFile(L"../NEWBGM.mp3", NULL);
+
 	if (SUCCEEDED(hr)) {
 		// Run the graph.
-		hr = pControl->Run(); if (SUCCEEDED(hr)) {
+		hr = pControl->Run();
+		if (SUCCEEDED(hr)) {
 			// Wait for completion.
 			long evCode;
 			pEvent->WaitForCompletion(INFINITE, &evCode);
