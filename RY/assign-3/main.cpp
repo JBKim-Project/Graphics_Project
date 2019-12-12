@@ -506,7 +506,7 @@ void text(double x, double y)
 		btime = 0;
 
 	sprintf(text[1], "TIME: %s\n", timerBuffer);
-	sprintf(text[0], "Score: %d\n", score);
+	sprintf(text[0], "SCORE: %d\n", score);
 
 	timetemp = sec % 10;
 
@@ -733,7 +733,7 @@ void check_Collision(int i)
 	float tempx = SC[i].startPositionx + SC[i].directionx - positionx;
 	float tempy = SC[i].startPositiony + SC[i].directiony - positiony;
 	float tempz = SC[i].startPositionz + SC[i].directionz - positionz;
-	if (((sqrt(tempx * tempx + tempy * tempy + tempz * tempz)) < RABBITSIZE + BALLSIZE) &&
+	if (((sqrt(tempx * tempx + tempy * tempy + tempz * tempz)) < RABBITSIZE + BALLSIZE - 0.2) &&
 		((i < NUM_OF_GREEN) || ((i >= NUM_OF_GREEN) && ((i % 3 == 1) || (i % 3 == 2))))) {
 		hr = pControl->Stop();
 		PlaySound(TEXT("../ENDING.wav"), NULL, SND_ASYNC | SND_FILENAME);
